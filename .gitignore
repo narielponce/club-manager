@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+
+# Virtual Environment
+/backend/venv/
+
+# Node.js
+/frontend/node_modules/
+dist/
+npm-debug.log
+
+# Editor/OS files
+.vscode/
+.idea/
+.DS_Store

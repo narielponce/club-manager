@@ -1,0 +1,22 @@
+/* Import base styles */
+@import './base.css';
+
+/*
+  Set the root elements to full height.
+  This is necessary for vertical centering layouts (like the login page)
+  and for layouts that use vh units (like the dashboard sidebar).
+*/
+html,
+body,
+#app {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+/* General body styles */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #f8f9fa; /* A light background for consistency */
+}
