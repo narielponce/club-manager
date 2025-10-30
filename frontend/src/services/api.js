@@ -3,26 +3,22 @@ import { token, logout } from './auth.js';
 const API_URL = 'http://127.0.0.1:8000';
 
 export async function apiFetch(endpoint, options = {}) {
-  const defaultHeaders = {
-    'Content-Type': 'application/json',
-  };
+  const headers = { ...options.headers };
 
   if (token.value) {
-    defaultHeaders['Authorization'] = `Bearer ${token.value}`;
+    headers['Authorization'] = `Bearer ${token.value}`;
+  }
+
+  // Do NOT set Content-Type if body is FormData; the browser does it automatically
+  // with the correct boundary.
+  if (!(options.body instanceof FormData)) {
+    headers['Content-Type'] = 'application/json';
   }
 
   const config = {
     ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
+    headers,
   };
-
-  // For GET requests, body should not be included
-  if (config.method === 'GET' || !config.method) {
-    delete config.body;
-  }
 
   const response = await fetch(`${API_URL}${endpoint}`, config);
 

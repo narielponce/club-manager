@@ -3,6 +3,8 @@ import MembersView from '../views/MembersView.vue'
 import LoginView from '../views/LoginView.vue'
 import UsersView from '../views/UsersView.vue'
 import ActivitiesView from '../views/ActivitiesView.vue'
+import SettingsView from '../views/SettingsView.vue'
+import DebtView from '../views/DebtView.vue'
 
 const routes = [
   {
@@ -27,6 +29,18 @@ const routes = [
     path: '/activities',
     name: 'Activities',
     component: ActivitiesView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: SettingsView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/debts',
+    name: 'Debts',
+    component: DebtView,
     meta: { requiresAuth: true }
   }
 ]

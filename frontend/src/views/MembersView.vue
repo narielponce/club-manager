@@ -1,9 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import AddMemberForm from '../components/AddMemberForm.vue'
 import MembersList from '../components/MembersList.vue'
 import MemberPaymentsModal from '../components/MemberPaymentsModal.vue'
 import MemberActivitiesModal from '../components/MemberActivitiesModal.vue'
+import AddMemberModal from '../components/AddMemberModal.vue'
 import { apiFetch } from '../services/api.js'
 
 const members = ref([])
@@ -29,51 +29,44 @@ const handleMembersChanged = () => {
   fetchMembers()
 }
 
-// --- Payments Modal State ---
+// --- Modal State Management ---
+const isAddMemberModalVisible = ref(false)
 const isPaymentsModalVisible = ref(false)
-const selectedMemberForPayments = ref(null)
+const isActivitiesModalVisible = ref(false)
+const selectedMember = ref(null)
 
 const openPaymentsModal = (member) => {
-  selectedMemberForPayments.value = member
+  selectedMember.value = member
   isPaymentsModalVisible.value = true
 }
 
-const closePaymentsModal = () => {
-  isPaymentsModalVisible.value = false
-}
-
-// --- Activities Modal State ---
-const isActivitiesModalVisible = ref(false)
-const selectedMemberForActivities = ref(null)
-
 const openActivitiesModal = (member) => {
-  selectedMemberForActivities.value = member
+  selectedMember.value = member
   isActivitiesModalVisible.value = true
 }
 
-const closeActivitiesModal = () => {
+const closeModal = () => {
+  isAddMemberModalVisible.value = false
+  isPaymentsModalVisible.value = false
   isActivitiesModalVisible.value = false
+  selectedMember.value = null
 }
 
-// When the modal updates the member, we update our local list to match
+// When a modal updates a member, we update our local list to match
 const handleMemberUpdateFromModal = (updatedMember) => {
   const index = members.value.findIndex(m => m.id === updatedMember.id)
   if (index !== -1) {
     members.value[index] = updatedMember
   }
 }
-
 </script>
 
 <template>
   <div>
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1>Gestión de Socios</h1>
+      <button class="btn btn-primary" @click="isAddMemberModalVisible = true">Añadir Socio</button>
     </div>
-
-    <AddMemberForm @member-added="handleMembersChanged" />
-    
-    <hr class="my-4">
 
     <div v-if="isLoading" class="alert alert-info">Cargando socios...</div>
     <div v-if="error" class="alert alert-danger">{{ error }}</div>
@@ -88,19 +81,25 @@ const handleMemberUpdateFromModal = (updatedMember) => {
     />
 
     <!-- Modals -->
+    <AddMemberModal
+      :show="isAddMemberModalVisible"
+      @close="closeModal"
+      @member-added="handleMembersChanged"
+    />
+
     <MemberPaymentsModal
       v-if="isPaymentsModalVisible"
       :show="isPaymentsModalVisible"
-      :member-id="selectedMemberForPayments?.id"
-      :member-name="`${selectedMemberForPayments?.first_name} ${selectedMemberForPayments?.last_name}`"
-      @close="closePaymentsModal"
+      :member-id="selectedMember?.id"
+      :member-name="`${selectedMember?.first_name} ${selectedMember?.last_name}`"
+      @close="closeModal"
     />
 
     <MemberActivitiesModal
       v-if="isActivitiesModalVisible"
       :show="isActivitiesModalVisible"
-      :member="selectedMemberForActivities"
-      @close="closeActivitiesModal"
+      :member="selectedMember"
+      @close="closeModal"
       @update:member="handleMemberUpdateFromModal"
     />
   </div>

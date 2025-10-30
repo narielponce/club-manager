@@ -11,16 +11,22 @@
         <li class="nav-item">
           <router-link to="/" class="nav-link" active-class="active">Socios</router-link>
         </li>
-        <!-- Admin-only link -->
-        <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
-          <router-link to="/users" class="nav-link" active-class="active">Gestionar Usuarios</router-link>
-        </li>
         <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
           <router-link to="/activities" class="nav-link" active-class="active">Actividades</router-link>
         </li>
-        <li>
-          <a href="#" class="nav-link text-white disabled">Events (soon)</a>
+        <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
+          <router-link to="/debts" class="nav-link" active-class="active">Deudas</router-link>
         </li>
+        <!-- Admin-only link -->
+        <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
+          <router-link to="/users" class="nav-link" active-class="active">Usuarios del sistema</router-link>
+        </li>
+        <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
+          <router-link to="/settings" class="nav-link" active-class="active">Configuración</router-link>
+        </li>
+        <!--<li>
+          <a href="#" class="nav-link text-white disabled">Events (soon)</a>
+        </li>-->
       </ul>
       <hr>
       <div v-if="currentUser">

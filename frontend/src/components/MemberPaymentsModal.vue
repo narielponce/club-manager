@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { apiFetch } from '../services/api.js'
 
 const props = defineProps({
@@ -10,17 +10,17 @@ const props = defineProps({
 
 const emit = defineEmits(['close'])
 
-const payments = ref([])
+const debts = ref([])
 const error = ref(null)
 const isLoading = ref(false)
 
 // --- Data Fetching ---
-const fetchPayments = async () => {
+const fetchDebts = async () => {
   if (!props.memberId) return
   try {
     isLoading.value = true
     error.value = null
-    payments.value = await apiFetch(`/members/${props.memberId}/payments/`)
+    debts.value = await apiFetch(`/members/${props.memberId}/debts/`)
   } catch (e) {
     error.value = e.message
   } finally {
@@ -28,109 +28,131 @@ const fetchPayments = async () => {
   }
 }
 
-// Watch for the modal to open and fetch data
-watch(() => props.show, (newVal) => {
-  if (newVal) {
-    fetchPayments()
+onMounted(() => {
+  if (props.show) {
+    fetchDebts()
   }
 })
 
-// --- New Payment Form ---
-const newPayment = reactive({
-  amount: '',
-  payment_date: new Date().toISOString().slice(0, 10), // Default to today
-  month_covered: '',
+// --- Payment Logic ---
+const payingDebtId = ref(null)
+const paymentForm = reactive({
+  payment_date: new Date().toISOString().slice(0, 10),
+  receipt: null,
 })
-const formError = ref(null)
+const paymentError = ref(null)
 
-const handleAddPayment = async () => {
-  formError.value = null
-  if (!newPayment.amount || !newPayment.payment_date || !newPayment.month_covered) {
-    formError.value = "Todos los campos son requeridos."
-    return
+const startPayment = (debtId) => {
+  payingDebtId.value = debtId
+  paymentForm.payment_date = new Date().toISOString().slice(0, 10)
+  paymentForm.receipt = null
+  paymentError.value = null
+}
+
+const cancelPayment = () => {
+  payingDebtId.value = null
+}
+
+const handleFileChange = (event) => {
+  paymentForm.receipt = event.target.files[0]
+}
+
+const handleConfirmPayment = async (debtId) => {
+  paymentError.value = null
+  
+  const formData = new FormData()
+  formData.append('payment_date', paymentForm.payment_date)
+  if (paymentForm.receipt) {
+    formData.append('receipt', paymentForm.receipt)
   }
+
   try {
-    await apiFetch(`/members/${props.memberId}/payments/`, {
+    await apiFetch(`/debts/${debtId}/payments/`, {
       method: 'POST',
-      body: JSON.stringify({
-        amount: newPayment.amount,
-        payment_date: newPayment.payment_date,
-        // The month input gives YYYY-MM, but the DB expects a full date.
-        // We'll standardize on the 1st of the month.
-        month_covered: `${newPayment.month_covered}-01`
-      }),
+      body: formData, // apiFetch will handle the content-type
     })
-    // Reset form and refresh list
-    newPayment.amount = ''
-    newPayment.month_covered = ''
-    fetchPayments()
+    // Refresh and close the inline form
+    payingDebtId.value = null
+    fetchDebts()
   } catch (e) {
-    formError.value = e.message
+    paymentError.value = e.message
   }
 }
 </script>
 
 <template>
   <div class="modal fade" :class="{ 'show': show, 'd-block': show }" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Pagos de: {{ memberName }}</h5>
+          <h5 class="modal-title">Estado de Cuenta: {{ memberName }}</h5>
           <button type="button" class="btn-close" @click="$emit('close')"></button>
         </div>
         <div class="modal-body">
-          <div v-if="isLoading" class="text-center">
+          <div v-if="isLoading" class="text-center py-5">
             <div class="spinner-border" role="status"><span class="visually-hidden">Cargando...</span></div>
           </div>
           <div v-if="error" class="alert alert-danger">{{ error }}</div>
           
           <div v-if="!isLoading && !error">
-            <!-- Add Payment Form -->
-            <h6>Registrar Nuevo Pago</h6>
-            <form @submit.prevent="handleAddPayment" class="mb-4 p-3 border rounded bg-light">
-              <div class="row align-items-end">
-                <div class="col-md-3">
-                  <label for="amount" class="form-label">Monto</label>
-                  <input type="number" step="0.01" id="amount" class="form-control" v-model="newPayment.amount" required>
-                </div>
-                <div class="col-md-3">
-                  <label for="payment_date" class="form-label">Fecha de Pago</label>
-                  <input type="date" id="payment_date" class="form-control" v-model="newPayment.payment_date" required>
-                </div>
-                <div class="col-md-3">
-                  <label for="month_covered" class="form-label">Mes Cubierto</label>
-                  <input type="month" id="month_covered" class="form-control" v-model="newPayment.month_covered" required>
-                </div>
-                <div class="col-md-3">
-                  <button type="submit" class="btn btn-success w-100">Añadir Pago</button>
-                </div>
-              </div>
-              <div v-if="formError" class="alert alert-danger mt-2 py-2">{{ formError }}</div>
-            </form>
-
-            <hr class="my-4">
-
-            <!-- Payments History Table -->
-            <h6>Historial de Pagos</h6>
-            <table v-if="payments.length > 0" class="table table-sm table-striped">
+            <h6>Historial de Deudas</h6>
+            <table class="table table-sm table-striped table-hover align-middle">
               <thead>
                 <tr>
-                  <th>Monto</th>
-                  <th>Fecha de Pago</th>
-                  <th>Mes Cubierto</th>
+                  <th>Mes</th>
+                  <th>Monto Total</th>
+                  <th>Estado</th>
+                  <th class="text-end">Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                <tr v-for="payment in payments" :key="payment.id">
-                  <td>{{ payment.amount }}</td>
-                  <td>{{ payment.payment_date }}</td>
-                  <td>{{ payment.month_covered }}</td>
+                <template v-for="debt in debts" :key="debt.id">
+                  <tr>
+                    <td>{{ new Date(debt.month).toLocaleString('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</td>
+                    <td>${{ debt.total_amount }}</td>
+                    <td>
+                      <span class="badge" :class="debt.is_paid ? 'bg-success' : 'bg-danger'">
+                        {{ debt.is_paid ? 'Pagado' : 'Pendiente' }}
+                      </span>
+                    </td>
+                    <td class="text-end">
+                      <button 
+                        v-if="!debt.is_paid" 
+                        @click="startPayment(debt.id)" 
+                        class="btn btn-success btn-sm"
+                        :disabled="payingDebtId !== null"
+                      >
+                        Imputar Pago
+                      </button>
+                    </td>
+                  </tr>
+                  <!-- Inline Form for Payment -->
+                  <tr v-if="payingDebtId === debt.id">
+                    <td colspan="4" class="p-3 bg-light">
+                      <p class="fw-bold small mb-2">Confirmar Pago</p>
+                      <div class="row align-items-end">
+                        <div class="col-md-4">
+                          <label class="form-label small">Fecha de Pago</label>
+                          <input type="date" class="form-control form-control-sm" v-model="paymentForm.payment_date" />
+                        </div>
+                        <div class="col-md-5">
+                          <label class="form-label small">Comprobante (Opcional)</label>
+                          <input type="file" class="form-control form-control-sm" @change="handleFileChange" accept=".pdf,.jpg,.jpeg,.png" />
+                        </div>
+                        <div class="col-md-3 text-end">
+                          <button @click="handleConfirmPayment(debt.id)" class="btn btn-primary btn-sm me-2">Confirmar</button>
+                          <button @click="cancelPayment" class="btn btn-secondary btn-sm">Cancelar</button>
+                        </div>
+                      </div>
+                      <div v-if="paymentError" class="alert alert-danger mt-2 py-1 px-2 small">{{ paymentError }}</div>
+                    </td>
+                  </tr>
+                </template>
+                <tr v-if="debts.length === 0">
+                  <td colspan="4" class="text-center text-muted">Este socio no tiene deudas generadas.</td>
                 </tr>
               </tbody>
             </table>
-            <div v-else>
-              <p class="text-muted">Este socio no tiene pagos registrados.</p>
-            </div>
           </div>
         </div>
         <div class="modal-footer">

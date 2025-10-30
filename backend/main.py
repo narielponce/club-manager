@@ -1,9 +1,11 @@
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, HTTPException, Depends, File, UploadFile, Form
+import os
+import uuid
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer
 from pydantic import BaseModel
 from typing import List, Optional
 import enum
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timedelta, timezone, date
 
@@ -106,14 +108,14 @@ class Member(MemberBase):
 class PaymentBase(BaseModel):
     amount: float
     payment_date: date
-    month_covered: date
 
 class PaymentCreate(PaymentBase):
     pass
 
 class Payment(PaymentBase):
     id: int
-    member_id: int
+    debt_id: int
+    receipt_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -160,6 +162,9 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: str | None = None
 
+class DebtGenerationRequest(BaseModel):
+    month: str # Expected format: YYYY-MM
+
 
 # Schemas for Debt
 class DebtItemBase(BaseModel):
@@ -180,6 +185,7 @@ class Debt(DebtBase):
     id: int
     member_id: int
     items: List[DebtItem] = []
+    payments: List[Payment] = []
     class Config:
         from_attributes = True
 
@@ -415,19 +421,17 @@ def update_club_settings(
     return db_club
 
 
-# --- Payment Endpoints ---
+# --- Debt & Payment Endpoints ---
 
-@app.post("/members/{member_id}/payments/", response_model=Payment, status_code=201)
-def create_payment_for_member(
+@app.get("/members/{member_id}/debts/", response_model=List[Debt])
+def get_debts_for_member(
     member_id: int,
-    payment: PaymentCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Create a new payment for a specific member, ensuring the member belongs to the current user's club.
+    Get all debts for a specific member, ensuring the member belongs to the current user's club.
     """
-    # Verify the member exists and belongs to the user's club
     db_member = db.query(models.Member).filter(
         models.Member.id == member_id,
         models.Member.club_id == current_user.club_id
@@ -435,30 +439,77 @@ def create_payment_for_member(
     if not db_member:
         raise HTTPException(status_code=404, detail="Member not found in this club")
 
-    db_payment = models.Payment(**payment.model_dump(), member_id=member_id)
-    db.add(db_payment)
-    db.commit()
-    db.refresh(db_payment)
-    return db_payment
+    # Eager load items and payments for efficiency
+    debts = db.query(models.Debt).options(
+        selectinload(models.Debt.items),
+        selectinload(models.Debt.payments)
+    ).filter(models.Debt.member_id == member_id).order_by(models.Debt.month.desc()).all()
+    
+    return debts
 
-@app.get("/members/{member_id}/payments/", response_model=List[Payment])
-def get_payments_for_member(
-    member_id: int,
+@app.post("/debts/{debt_id}/payments/", response_model=Payment)
+def create_payment_for_debt(
+    debt_id: int,
+    payment_date: str = Form(...),
+    receipt: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
-    Get all payments for a specific member, ensuring the member belongs to the current user's club.
+    Create a payment for a specific debt, upload a receipt, and mark the debt as paid.
     """
-    # Verify the member exists and belongs to the user's club
-    db_member = db.query(models.Member).filter(
-        models.Member.id == member_id,
+    # Verify the debt exists and belongs to the user's club
+    db_debt = db.query(models.Debt).join(models.Member).filter(
+        models.Debt.id == debt_id,
         models.Member.club_id == current_user.club_id
     ).first()
-    if db_member:
-        raise HTTPException(status_code=404, detail="Member not found in this club")
 
-    return db_member.payments
+    if not db_debt:
+        raise HTTPException(status_code=404, detail="Debt not found")
+    
+    if db_debt.is_paid:
+        raise HTTPException(status_code=400, detail="Debt is already paid")
+
+    # Manually parse the date to avoid validation errors
+    try:
+        parsed_payment_date = datetime.strptime(payment_date, "%Y-%m-%d").date()
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
+    receipt_url = None
+    if receipt:
+        # Ensure the uploads directory exists
+        upload_dir = "uploads/receipts"
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Create a unique filename and save the file
+        file_extension = receipt.filename.split(".")[-1]
+        unique_filename = f"{uuid.uuid4()}.{file_extension}"
+        file_location = os.path.join(upload_dir, unique_filename)
+        
+        with open(file_location, "wb+") as file_object:
+            file_object.write(receipt.file.read())
+        receipt_url = file_location
+
+    # Create the payment record
+    db_payment = models.Payment(
+        amount=db_debt.total_amount,
+        payment_date=parsed_payment_date,
+        debt_id=debt_id,
+        receipt_url=receipt_url
+    )
+    
+    # Mark debt as paid
+    db_debt.is_paid = True
+    
+    db.add(db_payment)
+    db.add(db_debt)
+    db.commit()
+    db.refresh(db_payment)
+    
+    return db_payment
+
+
 
 
 # --- Activity Endpoints (Admin Only) ---
@@ -577,3 +628,72 @@ def remove_activity_from_member(
     db.commit()
     db.refresh(db_member)
     return db_member
+
+
+# --- Debt Generation Endpoint (Admin Only) ---
+
+@app.post("/generate-monthly-debt", status_code=200)
+def generate_monthly_debt(
+    request: DebtGenerationRequest,
+    db: Session = Depends(get_db),
+    current_admin: User = Depends(get_current_admin_user)
+):
+    """
+    Generates the monthly debt for all active members of a club.
+    This includes the base club fee and any activities the member is enrolled in.
+    """
+    # 1. Get the club and its base_fee
+    db_club = db.query(models.Club).filter(models.Club.id == current_admin.club_id).first()
+    if not db_club or db_club.base_fee is None:
+        raise HTTPException(status_code=400, detail="La cuota social base no está configurada para el club. Por favor, configúrela primero.")
+
+    # 2. Parse the month string
+    try:
+        month_date = datetime.strptime(request.month, "%Y-%m").date().replace(day=1)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de mes inválido. Use AAAA-MM.")
+
+    # 3. Get all active members of the club, pre-loading their activities
+    members = db.query(models.Member).options(selectinload(models.Member.activities)).filter(
+        models.Member.club_id == current_admin.club_id,
+        models.Member.is_active == True
+    ).all()
+
+    generated_count = 0
+    for member in members:
+        # 4. Check if debt for this month already exists for this member
+        existing_debt = db.query(models.Debt).filter(
+            models.Debt.member_id == member.id,
+            models.Debt.month == month_date
+        ).first()
+        if existing_debt:
+            continue # Skip if already generated
+
+        # 5. Create DebtItems and calculate total
+        debt_items = []
+        total_amount = 0
+
+        # Add base fee
+        debt_items.append(models.DebtItem(description="Cuota Social", amount=db_club.base_fee))
+        total_amount += db_club.base_fee
+
+        # Add activity fees
+        for activity in member.activities:
+            debt_items.append(models.DebtItem(description=f"Actividad: {activity.name}", amount=activity.monthly_cost))
+            total_amount += activity.monthly_cost
+        
+        # 6. Create the main Debt record if there is any amount to charge
+        if total_amount > 0:
+            new_debt = models.Debt(
+                month=month_date,
+                total_amount=total_amount,
+                is_paid=False,
+                member_id=member.id,
+                items=debt_items
+            )
+            db.add(new_debt)
+            generated_count += 1
+
+    db.commit()
+    
+    return {"message": f"Deuda generada con éxito para {generated_count} socios."}

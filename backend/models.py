@@ -64,7 +64,7 @@ class Member(Base):
     club_id = Column(Integer, ForeignKey("clubs.id"))
     club = relationship("Club", back_populates="members")
     
-    payments = relationship("Payment", back_populates="member", cascade="all, delete-orphan")
+
     activities = relationship(
         "Activity",
         secondary=member_activity_association,
@@ -78,10 +78,11 @@ class Payment(Base):
     id = Column(Integer, primary_key=True, index=True)
     amount = Column(Numeric(10, 2), nullable=False)
     payment_date = Column(Date, nullable=False)
-    month_covered = Column(Date, nullable=False)
+    receipt_url = Column(String, nullable=True)
 
-    member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
-    member = relationship("Member", back_populates="payments")
+
+    debt_id = Column(Integer, ForeignKey("debts.id"), nullable=False)
+    debt = relationship("Debt", back_populates="payments")
 
 class Debt(Base):
     __tablename__ = "debts"
@@ -93,7 +94,9 @@ class Debt(Base):
 
     member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
     member = relationship("Member", back_populates="debts")
+    
     items = relationship("DebtItem", back_populates="debt", cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="debt")
 
 class DebtItem(Base):
     __tablename__ = "debt_items"
