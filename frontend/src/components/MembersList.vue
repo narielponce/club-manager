@@ -76,6 +76,27 @@ const viewPayments = (member) => {
 const manageActivities = (member) => {
   emit('open-activities-modal', member)
 }
+
+const formatDni = (dni) => {
+  if (!dni) return '';
+  // Assuming DNI is a number or a string of digits
+  return String(dni).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+};
+
+const formatPhoneNumber = (phoneNumber) => {
+  if (!phoneNumber) return '';
+  const digits = String(phoneNumber).replace(/\D/g, ''); // Remove non-digits
+  if (digits.length !== 10) return phoneNumber; // Return original if not 10 digits
+
+  // Heuristic based on common Argentine mobile number formats and examples
+  if (digits.startsWith('11')) { // Buenos Aires (2-4-4)
+    return digits.replace(/^(\d{2})(\d{4})(\d{4})$/, '$1-$2-$3');
+  } else if (digits.startsWith('3543')) { // Villa Carlos Paz (4-2-4)
+    return digits.replace(/^(\d{4})(\d{2})(\d{4})$/, '$1-$2-$3');
+  } else { // Default to 3-3-4 for others, e.g., 351-XXX-XXXX
+    return digits.replace(/^(\d{3})(\d{3})(\d{4})$/, '$1-$2-$3');
+  }
+};
 </script>
 
 <template>
@@ -88,10 +109,10 @@ const manageActivities = (member) => {
         <table class="table table-striped table-hover align-middle">
           <thead>
             <tr>
-              <th>Nombre</th>
-              <th>Apellido</th>
-              <th>Email</th>
               <th>DNI</th>
+              <th>Apellido</th>
+              <th>Nombre</th>
+              <th>Email</th>
               <th>Teléfono</th>
               <th class="text-end">Acciones</th>
             </tr>
@@ -99,11 +120,11 @@ const manageActivities = (member) => {
           <tbody>
             <tr v-for="member in members" :key="member.id">
               <template v-if="editingMemberId !== member.id">
-                <td>{{ member.first_name }}</td>
+                <td>{{ formatDni(member.dni) }}</td>
                 <td>{{ member.last_name }}</td>
+                <td>{{ member.first_name }}</td>
                 <td>{{ member.email }}</td>
-                <td>{{ member.dni }}</td>
-                <td>{{ member.phone }}</td>
+                <td>{{ formatPhoneNumber(member.phone) }}</td>
                 <td class="text-end">
                                   <button @click="viewPayments(member)" class="btn btn-info btn-sm me-2">Pagos</button>
                                   <button @click="manageActivities(member)" class="btn btn-secondary btn-sm me-2">Actividades</button>
@@ -111,10 +132,10 @@ const manageActivities = (member) => {
                 </td>
               </template>
               <template v-else>
-                <td><input type="text" v-model="editFormData.first_name" class="form-control form-control-sm" /></td>
-                <td><input type="text" v-model="editFormData.last_name" class="form-control form-control-sm" /></td>
-                <td><input type="email" v-model="editFormData.email" class="form-control form-control-sm" /></td>
                 <td><input type="text" v-model="editFormData.dni" class="form-control form-control-sm" /></td>
+                <td><input type="text" v-model="editFormData.last_name" class="form-control form-control-sm" /></td>
+                <td><input type="text" v-model="editFormData.first_name" class="form-control form-control-sm" /></td>
+                <td><input type="email" v-model="editFormData.email" class="form-control form-control-sm" /></td>
                 <td><input type="tel" v-model="editFormData.phone" class="form-control form-control-sm" /></td>
                 <td class="text-end">
                   <button @click="handleUpdate(member.id)" class="btn btn-success btn-sm me-2">Guardar</button>

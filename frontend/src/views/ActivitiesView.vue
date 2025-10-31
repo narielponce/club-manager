@@ -1,12 +1,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { apiFetch } from '../services/api.js'
-import AddActivityForm from '../components/AddActivityForm.vue'
 import ActivityList from '../components/ActivityList.vue'
+import AddActivityModal from '../components/AddActivityModal.vue'
 
 const activities = ref([])
 const error = ref(null)
 const isLoading = ref(true)
+const isAddModalVisible = ref(false)
 
 const fetchActivities = async () => {
   try {
@@ -22,8 +23,9 @@ const fetchActivities = async () => {
 
 onMounted(fetchActivities)
 
-// A single handler to refresh the list for any change
 const handleActivitiesChanged = () => {
+  // Close modal on success and refresh list
+  isAddModalVisible.value = false
   fetchActivities()
 }
 </script>
@@ -32,11 +34,8 @@ const handleActivitiesChanged = () => {
   <div>
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1>Gestión de Actividades</h1>
+      <button class="btn btn-primary" @click="isAddModalVisible = true">Nueva Actividad</button>
     </div>
-
-    <AddActivityForm @activity-added="handleActivitiesChanged" />
-
-    <hr class="my-4">
 
     <div v-if="isLoading" class="alert alert-info">Cargando actividades...</div>
     <div v-if="error" class="alert alert-danger">{{ error }}</div>
@@ -46,6 +45,12 @@ const handleActivitiesChanged = () => {
       :activities="activities"
       @activity-updated="handleActivitiesChanged"
       @activity-deleted="handleActivitiesChanged"
+    />
+
+    <AddActivityModal
+      :show="isAddModalVisible"
+      @close="isAddModalVisible = false"
+      @activity-added="handleActivitiesChanged"
     />
   </div>
 </template>

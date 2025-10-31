@@ -14,12 +14,10 @@
         <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
           <router-link to="/activities" class="nav-link" active-class="active">Actividades</router-link>
         </li>
-        <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
-          <router-link to="/debts" class="nav-link" active-class="active">Deudas</router-link>
-        </li>
+
         <!-- Admin-only link -->
         <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
-          <router-link to="/users" class="nav-link" active-class="active">Usuarios del sistema</router-link>
+          <router-link to="/users" class="nav-link" active-class="active">Usuarios</router-link>
         </li>
         <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
           <router-link to="/settings" class="nav-link" active-class="active">Configuración</router-link>

@@ -78,6 +78,14 @@ const handleConfirmPayment = async (debtId) => {
     paymentError.value = e.message
   }
 }
+
+const formatCurrency = (value) => {
+  if (value === null || value === undefined) return '';
+  return new Intl.NumberFormat('es-ES', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(value);
+};
 </script>
 
 <template>
@@ -109,7 +117,7 @@ const handleConfirmPayment = async (debtId) => {
                 <template v-for="debt in debts" :key="debt.id">
                   <tr>
                     <td>{{ new Date(debt.month).toLocaleString('es-ES', { month: 'long', year: 'numeric', timeZone: 'UTC' }) }}</td>
-                    <td>${{ debt.total_amount }}</td>
+                    <td>{{ formatCurrency(debt.total_amount) }}</td>
                     <td>
                       <span class="badge" :class="debt.is_paid ? 'bg-success' : 'bg-danger'">
                         {{ debt.is_paid ? 'Pagado' : 'Pendiente' }}

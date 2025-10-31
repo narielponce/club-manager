@@ -65,7 +65,7 @@ const handleMemberUpdateFromModal = (updatedMember) => {
   <div>
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1>Gestión de Socios</h1>
-      <button class="btn btn-primary" @click="isAddMemberModalVisible = true">Añadir Socio</button>
+      <button class="btn btn-primary" @click="isAddMemberModalVisible = true">Nuevo Socio</button>
     </div>
 
     <div v-if="isLoading" class="alert alert-info">Cargando socios...</div>

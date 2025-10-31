@@ -76,7 +76,7 @@ const handleUpdate = async (activityId) => {
             <tr v-for="activity in activities" :key="activity.id">
               <template v-if="editingActivityId !== activity.id">
                 <td>{{ activity.name }}</td>
-                <td>{{ activity.monthly_cost }}</td>
+                <td>{{ $formatCurrency(activity.monthly_cost) }}</td>
                 <td class="text-end">
                   <button @click="startEditing(activity)" class="btn btn-primary btn-sm me-2">Editar</button>
                   <button @click="handleDelete(activity.id)" class="btn btn-danger btn-sm">Eliminar</button>

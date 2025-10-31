@@ -74,7 +74,7 @@ onMounted(() => {
                 @change="handleCheckboxChange(activity, $event.target.checked)"
               >
               <label class="form-check-label" :for="`activity-${activity.id}`">
-                {{ activity.name }} ({{ activity.monthly_cost }}€)
+                {{ activity.name }} ($ {{ $formatCurrency(activity.monthly_cost) }})
               </label>
             </div>
             <div v-if="allActivities.length === 0">

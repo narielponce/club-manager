@@ -9,9 +9,17 @@ import { fetchCurrentUser } from './services/auth.js'
 // Fetch user data on initial load if a token exists
 fetchCurrentUser().then(() => {
   const app = createApp(App)
-
+  
+  // Define global utility functions
+  app.config.globalProperties.$formatCurrency = (value) => {
+    if (value === null || value === undefined) return '';
+    return new Intl.NumberFormat('es-ES', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+  
   app.use(router)
-
-  app.mount('#app')
-})
+  
+  app.mount('#app')})
 
