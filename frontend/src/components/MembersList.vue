@@ -6,10 +6,29 @@ defineProps({
   members: {
     type: Array,
     required: true
+  },
+  currentPage: {
+    type: Number,
+    required: true
+  },
+  totalPages: {
+    type: Number,
+    required: true
+  },
+  pageSize: {
+    type: Number,
+    required: true
   }
 })
 
-const emit = defineEmits(['member-deleted', 'member-updated', 'open-payments-modal', 'open-activities-modal'])
+const emit = defineEmits([
+  'member-deleted',
+  'member-updated',
+  'open-payments-modal',
+  'open-activities-modal',
+  'page-change',
+  'update:pageSize'
+])
 
 // --- Delete Logic ---
 const handleDelete = async (memberId) => {
@@ -149,6 +168,35 @@ const formatPhoneNumber = (phoneNumber) => {
           </tbody>
         </table>
       </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between align-items-center">
+      <div>
+        <label for="pageSizeSelect" class="form-label me-2">Items por página:</label>
+        <select
+          id="pageSizeSelect"
+          :value="pageSize"
+          @change="emit('update:pageSize', parseInt($event.target.value))"
+          class="form-select form-select-sm w-auto d-inline-block"
+        >
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+      <nav>
+        <ul class="pagination pagination-sm mb-0">
+          <li class="page-item" :class="{ disabled: currentPage === 1 }">
+            <button class="page-link" @click="emit('page-change', currentPage - 1)">Anterior</button>
+          </li>
+          <li class="page-item active">
+             <span class="page-link">{{ currentPage }} / {{ totalPages }}</span>
+          </li>
+          <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+            <button class="page-link" @click="emit('page-change', currentPage + 1)">Siguiente</button>
+          </li>
+        </ul>
+      </nav>
     </div>
   </div>
 </template>

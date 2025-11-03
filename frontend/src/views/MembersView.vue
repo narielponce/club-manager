@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import MembersList from '../components/MembersList.vue'
 import MemberPaymentsModal from '../components/MemberPaymentsModal.vue'
 import MemberActivitiesModal from '../components/MemberActivitiesModal.vue'
@@ -10,12 +10,23 @@ const members = ref([])
 const error = ref(null)
 const isLoading = ref(true)
 
+// --- Pagination State ---
+const currentPage = ref(1)
+const pageSize = ref(10) // Default page size
+const totalMembers = ref(0)
+
+const totalPages = computed(() => {
+  return Math.ceil(totalMembers.value / pageSize.value)
+})
+
 // --- Data Fetching ---
 const fetchMembers = async () => {
   try {
     isLoading.value = true
     error.value = null
-    members.value = await apiFetch('/members')
+    const data = await apiFetch(`/members?page=${currentPage.value}&size=${pageSize.value}`)
+    members.value = data.items
+    totalMembers.value = data.total
   } catch (e) {
     error.value = e.message
   } finally {
@@ -23,11 +34,28 @@ const fetchMembers = async () => {
   }
 }
 
+// Fetch members when the component is first mounted
 onMounted(fetchMembers)
 
+// --- Event Handlers ---
 const handleMembersChanged = () => {
+  // Reset to the first page if a member is added/deleted
+  currentPage.value = 1
   fetchMembers()
 }
+
+const handlePageChange = (newPage) => {
+  if (newPage > 0 && newPage <= totalPages.value) {
+    currentPage.value = newPage
+    fetchMembers()
+  }
+}
+
+// Watch for changes in pageSize and refetch members
+watch(pageSize, () => {
+  currentPage.value = 1 // Reset to first page
+  fetchMembers()
+})
 
 // --- Modal State Management ---
 const isAddMemberModalVisible = ref(false)
@@ -74,6 +102,11 @@ const handleMemberUpdateFromModal = (updatedMember) => {
     <MembersList
       v-if="!isLoading && !error"
       :members="members"
+      :currentPage="currentPage"
+      :totalPages="totalPages"
+      :pageSize.sync="pageSize"
+      @page-change="handlePageChange"
+      @update:pageSize="(value) => pageSize = value"
       @member-updated="handleMembersChanged"
       @member-deleted="handleMembersChanged"
       @open-payments-modal="openPaymentsModal"

@@ -268,13 +268,33 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
     """
     return current_user
 
-@app.get("/members", response_model=List[Member])
-def get_all_members(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    members = db.query(models.Member).filter(
+class MemberPage(BaseModel):
+    items: List[Member]
+    total: int
+
+@app.get("/members", response_model=MemberPage)
+def get_all_members(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+    page: int = 1,
+    size: int = 10
+):
+    """
+    Get a paginated list of active members for the current user's club.
+    """
+    # Base query
+    query = db.query(models.Member).filter(
         models.Member.club_id == current_user.club_id,
         models.Member.is_active == True
-    ).all()
-    return members
+    )
+
+    # Get total count
+    total = query.count()
+
+    # Get paginated items
+    items = query.offset((page - 1) * size).limit(size).all()
+
+    return {"items": items, "total": total}
 
 @app.post("/members", response_model=Member, status_code=201)
 def create_new_member(member_in: MemberCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
