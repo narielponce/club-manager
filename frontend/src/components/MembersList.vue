@@ -1,6 +1,17 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { apiFetch } from '../services/api.js'
+import { currentUser } from '../services/user.js'
+
+const isAdmin = computed(() => currentUser.value?.role === 'admin')
+const canManagePayments = computed(() => {
+  const role = currentUser.value?.role
+  return role === 'admin' || role === 'tesorero'
+})
+const canManageActivities = computed(() => {
+  const role = currentUser.value?.role
+  return role === 'admin' || role === 'profesor'
+})
 
 defineProps({
   members: {
@@ -145,9 +156,10 @@ const formatPhoneNumber = (phoneNumber) => {
                 <td>{{ member.email }}</td>
                 <td>{{ formatPhoneNumber(member.phone) }}</td>
                 <td class="text-end">
-                                  <button @click="viewPayments(member)" class="btn btn-info btn-sm me-2">Pagos</button>
-                                  <button @click="manageActivities(member)" class="btn btn-secondary btn-sm me-2">Actividades</button>
-                                  <button @click="startEditing(member)" class="btn btn-primary btn-sm me-2">Editar</button>                  <button @click="handleDelete(member.id)" class="btn btn-danger btn-sm">Borrar</button>
+                  <button v-if="canManagePayments" @click="viewPayments(member)" class="btn btn-info btn-sm me-2">Pagos</button>
+                  <button v-if="canManageActivities" @click="manageActivities(member)" class="btn btn-secondary btn-sm me-2">Actividades</button>
+                  <button v-if="isAdmin" @click="startEditing(member)" class="btn btn-primary btn-sm me-2">Editar</button>
+                  <button v-if="isAdmin" @click="handleDelete(member.id)" class="btn btn-danger btn-sm">Borrar</button>
                 </td>
               </template>
               <template v-else>

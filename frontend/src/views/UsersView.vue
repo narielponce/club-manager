@@ -5,15 +5,22 @@ import UserList from '../components/UserList.vue'
 import AddUserModal from '../components/AddUserModal.vue'
 
 const users = ref([])
+const clubSettings = ref(null)
 const error = ref(null)
 const isLoading = ref(true)
 const isAddModalVisible = ref(false)
 
-const fetchUsers = async () => {
+const fetchData = async () => {
   try {
     isLoading.value = true
     error.value = null
-    users.value = await apiFetch('/club/users/')
+    // Fetch both in parallel
+    const [usersData, settingsData] = await Promise.all([
+      apiFetch('/club/users/'),
+      apiFetch('/club/settings'),
+    ])
+    users.value = usersData
+    clubSettings.value = settingsData
   } catch (e) {
     error.value = e.message
   } finally {
@@ -21,12 +28,12 @@ const fetchUsers = async () => {
   }
 }
 
-onMounted(fetchUsers)
+onMounted(fetchData)
 
 const handleUsersChanged = () => {
   // Optionally close the modal on success and refresh the list
   isAddModalVisible.value = false
-  fetchUsers()
+  fetchData() // Refetch all data
 }
 </script>
 
@@ -49,6 +56,7 @@ const handleUsersChanged = () => {
 
     <AddUserModal
       :show="isAddModalVisible"
+      :email-domain="clubSettings?.email_domain"
       @close="isAddModalVisible = false"
       @user-added="handleUsersChanged"
     />

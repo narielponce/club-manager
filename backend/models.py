@@ -1,6 +1,6 @@
 import enum
 from sqlalchemy import (
-    Boolean, Column, ForeignKey, Integer, String, Enum as SQLAlchemyEnum, Date, Numeric, Table
+    Boolean, Column, ForeignKey, Integer, String, Enum as SQLAlchemyEnum, Date, Numeric, Table, Float
 )
 from sqlalchemy.orm import relationship
 
@@ -19,10 +19,12 @@ class Club(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
-    base_fee = Column(Numeric(10, 2), nullable=True)
+    base_fee = Column(Float, nullable=True)
+    email_domain = Column(String, nullable=True) # Domain for club emails, e.g., 'example.com'
 
-    members = relationship("Member", back_populates="club")
     users = relationship("User", back_populates="club")
+    members = relationship("Member", back_populates="club")
+    activities = relationship("Activity", back_populates="club")
 
 class User(Base):
     __tablename__ = "users"
@@ -42,6 +44,9 @@ class Activity(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     monthly_cost = Column(Numeric(10, 2), nullable=False)
+
+    club_id = Column(Integer, ForeignKey("clubs.id"))
+    club = relationship("Club", back_populates="activities")
 
     members = relationship(
         "Member",

@@ -8,23 +8,18 @@
       </a>
       <hr>
       <ul class="nav nav-pills flex-column mb-auto">
-        <li class="nav-item">
+        <li v-if="canViewMembers" class="nav-item">
           <router-link to="/" class="nav-link" active-class="active">Socios</router-link>
         </li>
-        <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
+        <li v-if="isAdmin" class="nav-item">
           <router-link to="/activities" class="nav-link" active-class="active">Actividades</router-link>
         </li>
-
-        <!-- Admin-only link -->
-        <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
+        <li v-if="isAdmin" class="nav-item">
           <router-link to="/users" class="nav-link" active-class="active">Usuarios</router-link>
         </li>
-        <li v-if="currentUser && currentUser.role === 'admin'" class="nav-item">
+        <li v-if="isAdmin" class="nav-item">
           <router-link to="/settings" class="nav-link" active-class="active">Configuración</router-link>
         </li>
-        <!--<li>
-          <a href="#" class="nav-link text-white disabled">Events (soon)</a>
-        </li>-->
       </ul>
       <hr>
       <div v-if="currentUser">
@@ -43,9 +38,16 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { logout } from '../services/auth.js'
 import { currentUser } from '../services/user.js'
 import { RouterLink } from 'vue-router'
+
+const isAdmin = computed(() => currentUser.value?.role === 'admin')
+const canViewMembers = computed(() => {
+  const role = currentUser.value?.role
+  return role === 'admin' || role === 'tesorero' || role === 'profesor'
+})
 </script>
 
 <style scoped>

@@ -4,11 +4,15 @@ import { apiFetch } from '../services/api.js'
 
 const props = defineProps({
   show: Boolean,
+  emailDomain: {
+    type: String,
+    default: ''
+  }
 })
 
 const emit = defineEmits(['close', 'user-added'])
 
-const email = ref('')
+const emailLocalPart = ref('')
 const password = ref('')
 const role = ref('')
 const message = ref('')
@@ -17,7 +21,7 @@ const error = ref(null)
 const availableRoles = ['tesorero', 'comision', 'profesor', 'socio']
 
 const resetForm = () => {
-  email.value = ''
+  emailLocalPart.value = ''
   password.value = ''
   role.value = ''
   message.value = ''
@@ -35,14 +39,14 @@ const handleSubmit = async () => {
     await apiFetch('/club/users/', {
       method: 'POST',
       body: JSON.stringify({
-        email: email.value,
+        email_local_part: emailLocalPart.value,
         password: password.value,
         role: role.value,
       }),
     })
     message.value = 'Usuario creado con éxito! Puedes cerrar o añadir otro.'
     // Clear fields for next entry, but keep modal open
-    email.value = ''
+    emailLocalPart.value = ''
     password.value = ''
     role.value = ''
     emit('user-added')
@@ -72,7 +76,10 @@ watch(() => props.show, (newVal) => {
           <form @submit.prevent="handleSubmit">
             <div class="mb-3">
               <label for="modal-user-email" class="form-label">Email</label>
-              <input type="email" id="modal-user-email" class="form-control" v-model="email" required />
+              <div class="input-group">
+                <input type="text" id="modal-user-email" class="form-control" v-model="emailLocalPart" required />
+                <span class="input-group-text">@{{ emailDomain }}</span>
+              </div>
             </div>
             <div class="mb-3">
               <label for="modal-user-password" class="form-label">Contraseña</label>
