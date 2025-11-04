@@ -10,18 +10,12 @@ export async function login(email, password) {
   formData.append('username', email)
   formData.append('password', password)
 
-  // Use raw fetch for the login request itself
-  const response = await fetch(`http://127.0.0.1:8000/token`, {
+  // Use the generic apiFetch helper for the login request.
+  // It will correctly resolve to /api/token.
+  const data = await apiFetch('/token', {
     method: 'POST',
     body: formData
   })
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}))
-    throw new Error(errorData.detail || 'Failed to login')
-  }
-
-  const data = await response.json()
   
   // Store the token and update reactive state
   localStorage.setItem('token', data.access_token)

@@ -1,6 +1,6 @@
 import { token, logout } from './auth.js';
 
-const API_URL = 'http://127.0.0.1:8000';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
 
 export async function apiFetch(endpoint, options = {}) {
   const headers = { ...options.headers };
