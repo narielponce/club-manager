@@ -11,8 +11,6 @@ from . import models, schemas
 from .database import get_db
 
 # --- Configuration ---
-# Read SECRET_KEY from environment variable, with a fallback for local dev if not set
-SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_that_should_be_in_env_vars")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
@@ -27,6 +25,9 @@ def get_password_hash(password: str) -> str:
 
 # --- JWT Token Creation ---
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    if not SECRET_KEY:
+        raise ValueError("SECRET_KEY environment variable not set")
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
@@ -40,6 +41,10 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    if not SECRET_KEY:
+        raise ValueError("SECRET_KEY environment variable not set")
+
     credentials_exception = HTTPException(
         status_code=401,
         detail="Could not validate credentials",
