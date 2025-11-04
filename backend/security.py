@@ -1,17 +1,18 @@
-from passlib.context import CryptContext
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 from jose import JWTError, jwt
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
+from passlib.context import CryptContext
 
 from . import models, schemas
 from .database import get_db
 
 # --- Configuration ---
-# This should be a secret key stored securely in environment variables, not hardcoded
-SECRET_KEY = "a_very_secret_key_that_should_be_in_env_vars"
+# Read SECRET_KEY from environment variable, with a fallback for local dev if not set
+SECRET_KEY = os.getenv("SECRET_KEY", "a_very_secret_key_that_should_be_in_env_vars")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
