@@ -57,5 +57,12 @@ services:
     #   - "8080:80"
     restart: unless-stopped
 
+  certbot:
+    image: certbot/certbot
+    container_name: club_manager_certbot
+    volumes:
+      - /var/www/certbot:/var/www/certbot
+      - /etc/letsencrypt:/etc/letsencrypt
+
 volumes:
   postgres_data:
