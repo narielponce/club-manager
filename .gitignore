@@ -26,3 +26,14 @@ docker-compose.override.yml
 
 # Environment variables file
 .env
+
+# Python specific ignores
+*.pyc
+__pycache__/
+/backend/venv/
+
+# Uploads directory for user-generated content
+/uploads/
+
+# Specific temporary files (like screenshots)
+Captura de pantalla_*.png
