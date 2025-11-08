@@ -44,7 +44,7 @@ const handleLogin = async () => {
     const data = await login(email.value, password.value);
     if (data.access_token) {
       await fetchCurrentUser();
-      router.push('/superadmin/create-club');
+      router.push('/superadmin/dashboard');
     }
   } catch (err) {
     error.value = 'Invalid credentials or server error.';

@@ -14,3 +14,24 @@ export async function createClub(formData) {
     throw error;
   }
 }
+
+export async function getClubs(includeInactive = false) {
+  let apiPath = '/superadmin/clubs/';
+  if (includeInactive) {
+    apiPath += '?include_inactive=true';
+  }
+  return apiFetch(apiPath);
+}
+
+export async function updateClub(clubId, clubData) {
+  return apiFetch(`/superadmin/clubs/${clubId}`, {
+    method: 'PUT',
+    body: JSON.stringify(clubData),
+  });
+}
+
+export async function deleteClub(clubId) {
+  return apiFetch(`/superadmin/clubs/${clubId}`, {
+    method: 'DELETE',
+  });
+}

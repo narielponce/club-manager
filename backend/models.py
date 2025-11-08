@@ -22,6 +22,7 @@ class Club(Base):
     base_fee = Column(Float, nullable=True)
     email_domain = Column(String, nullable=True) # Domain for club emails, e.g., 'example.com'
     logo_url = Column(String, nullable=True) # URL or path to the club's logo
+    is_active = Column(Boolean, default=True, index=True)
 
     users = relationship("User", back_populates="club")
     members = relationship("Member", back_populates="club")

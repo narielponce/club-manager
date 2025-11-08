@@ -1,6 +1,9 @@
 <template>
   <div>
-    <h1>Crear Nuevo Club</h1>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1>Crear Nuevo Club</h1>
+      <RouterLink :to="{ name: 'superadmin-dashboard' }" class="btn btn-secondary">Volver a la Lista</RouterLink>
+    </div>
     <div class="card">
       <div class="card-body">
         <form @submit.prevent="handleCreateClub">
@@ -39,6 +42,7 @@
 
 <script setup>
 import { ref } from 'vue';
+import { RouterLink } from 'vue-router';
 import { createClub } from '../services/superadmin.js';
 
 const clubName = ref('');

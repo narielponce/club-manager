@@ -83,12 +83,18 @@ class UserUpdateByAdmin(BaseModel):
 class ClubUpdate(BaseModel):
     base_fee: float
 
+class SuperadminClubUpdate(BaseModel):
+    name: Optional[str] = None
+    base_fee: Optional[float] = None
+    is_active: Optional[bool] = None
+
 class Club(BaseModel):
     id: int
     name: str
     base_fee: Optional[float] = None
     email_domain: Optional[str] = None
     logo_url: Optional[str] = None # URL or path to the club's logo
+    is_active: bool
     class Config:
         from_attributes = True
 

@@ -6,6 +6,7 @@ import UsersView from '../views/UsersView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import SuperadminLoginView from '../views/SuperadminLoginView.vue'
 import CreateClubView from '../views/CreateClubView.vue'
+import SuperadminDashboardView from '../views/SuperadminDashboardView.vue'
 import { token } from '../services/auth.js'
 
 const router = createRouter({
@@ -47,6 +48,19 @@ const router = createRouter({
       name: 'superadmin-login',
       component: SuperadminLoginView,
       meta: { layout: 'LoginLayout' }
+    },
+    {
+      path: '/superadmin/dashboard',
+      name: 'superadmin-dashboard',
+      component: SuperadminDashboardView,
+      meta: { requiresAuth: true }, // Use the main app layout
+      beforeEnter: (to, from, next) => {
+        if (token.value) {
+          next();
+        } else {
+          next('/superadmin/login');
+        }
+      }
     },
     {
       path: '/superadmin/create-club',
