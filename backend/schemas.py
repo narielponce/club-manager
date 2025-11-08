@@ -9,6 +9,7 @@ class UserRole(str, enum.Enum):
     comision = "comision"
     profesor = "profesor"
     socio = "socio"
+    superadmin = "superadmin"
 
 class MemberBase(BaseModel):
     first_name: str
@@ -87,6 +88,7 @@ class Club(BaseModel):
     name: str
     base_fee: Optional[float] = None
     email_domain: Optional[str] = None
+    logo_url: Optional[str] = None # URL or path to the club's logo
     class Config:
         from_attributes = True
 
@@ -94,7 +96,7 @@ class User(UserBase):
     id: int
     is_active: bool
     role: UserRole
-    club: Club
+    club: Optional[Club] = None
     class Config:
         from_attributes = True
 

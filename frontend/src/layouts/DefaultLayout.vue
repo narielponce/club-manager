@@ -2,29 +2,62 @@
   <div>
     <!-- Vertical Sidebar (Visible on large screens) -->
     <div class="sidebar bg-dark text-white vh-100 p-3 d-none d-lg-flex flex-column">
-      <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
-        <span v-if="currentUser" class="fs-4">{{ currentUser.club.name }}</span>
-        <span v-else class="fs-4">Club Manager</span>
-      </a>
+      <div class="text-center">
+        <img src="data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23495057'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='24' font-family='sans-serif' dy='.1em'%3ECM%3C/text%3E%3C/svg%3E" alt="Logo" class="mb-3">
+        <div v-if="currentUser" class="text-white text-truncate">
+          <span v-if="currentUser.role === 'superadmin'" title="Panel de Superadministrador">
+            Panel Superadmin
+          </span>
+          <span v-else-if="currentUser.club" :title="currentUser.club.name">
+            {{ currentUser.club.name }}
+          </span>
+        </div>
+      </div>
       <hr>
       <ul class="nav nav-pills flex-column mb-auto">
         <li v-if="canViewMembers" class="nav-item">
-          <router-link to="/" class="nav-link text-white" active-class="active">Socios</router-link>
+          <router-link to="/" class="nav-link text-white d-flex align-items-center" active-class="active">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-people-fill me-2" viewBox="0 0 16 16">
+              <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+              <path fill-rule="evenodd" d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
+            </svg>
+            Socios
+          </router-link>
         </li>
         <li v-if="isAdmin" class="nav-item">
-          <router-link to="/activities" class="nav-link text-white" active-class="active">Actividades</router-link>
+          <router-link to="/activities" class="nav-link text-white d-flex align-items-center" active-class="active">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-calendar-check me-2" viewBox="0 0 16 16">
+              <path d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0z"/>
+              <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
+            </svg>
+            Actividades
+          </router-link>
         </li>
         <li v-if="isAdmin" class="nav-item">
-          <router-link to="/users" class="nav-link text-white" active-class="active">Usuarios</router-link>
+          <router-link to="/users" class="nav-link text-white d-flex align-items-center" active-class="active">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-person-fill-gear me-2" viewBox="0 0 16 16">
+              <path d="M11 5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm-9 8c0 1 1 1 1 1h5.256A4.493 4.493 0 0 1 8 12.5a4.49 4.49 0 0 1 1.544-3.393C7.077 9.038 6 8.5 6 8c0-1 1-1 1-1h.256A4.5 4.5 0 0 1 8 5.5a4.5 4.5 0 0 1 1.544 3.393c.81-.42 1.55-.936 2.207-1.554C11.442 6.32 10.27 6 9 6c-2 0-4 1-4 2 0 .5.224 1.342 1.256 2.393Z"/>
+              <path d="M16 12.5a3.5 3.5 0 1 1-7 0 3.5 3.5 0 0 1 7 0Zm-3.5-2a.5.5 0 0 0-.5.5v1h-1a.5.5 0 0 0 0 1h1v1a.5.5 0 0 0 1 0v-1h1a.5.5 0 0 0 0-1h-1v-1a.5.5 0 0 0-.5-.5Z"/>
+            </svg>
+            Usuarios
+          </router-link>
         </li>
         <li v-if="isAdmin" class="nav-item">
-          <router-link to="/settings" class="nav-link text-white" active-class="active">Configuración</router-link>
+          <router-link to="/settings" class="nav-link text-white d-flex align-items-center" active-class="active">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-gear-fill me-2" viewBox="0 0 16 16">
+              <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311a1.464 1.464 0 0 1-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413-1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872l-.1-.34zM8 10.93a2.929 2.929 0 1 1 0-5.858 2.929 2.929 0 0 1 0 5.858z"/>
+            </svg>
+            Configuración
+          </router-link>
         </li>
       </ul>
       <hr>
       <div v-if="currentUser">
-        <!--<div class="text-white small">{{ currentUser.email }}</div>-->
-        <a href="#" @click.prevent="logout" class="nav-link text-white d-block mt-1">
+        <a href="#" @click.prevent="logout" class="nav-link text-white d-flex align-items-center mt-1">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-box-arrow-right me-2" viewBox="0 0 16 16">
+            <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0v2z"/>
+            <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3z"/>
+          </svg>
           Logout
         </a>
       </div>

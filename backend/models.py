@@ -21,6 +21,7 @@ class Club(Base):
     name = Column(String, unique=True, index=True)
     base_fee = Column(Float, nullable=True)
     email_domain = Column(String, nullable=True) # Domain for club emails, e.g., 'example.com'
+    logo_url = Column(String, nullable=True) # URL or path to the club's logo
 
     users = relationship("User", back_populates="club")
     members = relationship("Member", back_populates="club")
@@ -33,9 +34,9 @@ class User(Base):
     email = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
-    role = Column(SQLAlchemyEnum("admin", "tesorero", "comision", "profesor", "socio", name="user_roles"), nullable=False)
+    role = Column(SQLAlchemyEnum("admin", "tesorero", "comision", "profesor", "socio", "superadmin", name="user_roles"), nullable=False)
 
-    club_id = Column(Integer, ForeignKey("clubs.id"))
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=True)
     club = relationship("Club", back_populates="users")
 
 class Activity(Base):

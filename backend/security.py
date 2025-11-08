@@ -69,6 +69,11 @@ async def get_current_admin_user(current_user: schemas.User = Depends(get_curren
         raise HTTPException(status_code=403, detail="The user does not have enough privileges")
     return current_user
 
+async def get_current_superadmin_user(current_user: schemas.User = Depends(get_current_user)):
+    if current_user.role != "superadmin":
+        raise HTTPException(status_code=403, detail="This action requires superadmin privileges")
+    return current_user
+
 def require_roles(allowed_roles: List[str]):
     def role_checker(current_user: schemas.User = Depends(get_current_user)):
         if current_user.role not in allowed_roles:

@@ -1,39 +1,85 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
+import uuid
+import os
 
-from .. import models, schemas
+from .. import models, schemas, security
 from ..database import get_db
 from ..security import get_current_user, get_current_admin_user, get_password_hash
 
 router = APIRouter()
 
 @router.post("/users/", response_model=schemas.User)
-def create_user(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+async def create_user(
+    club_name: str = Form(...),
+    email: str = Form(...),
+    password: str = Form(...),
+    logo: Optional[UploadFile] = File(None),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_superadmin_user)
+):
+    # --- DEBUG PRINTS ---
+    print(f"--- DEBUG: Received request to create club '{club_name}'.")
+    print(f"--- DEBUG: Logo object received: {logo}")
+    if logo:
+        print(f"--- DEBUG: Logo filename: {logo.filename}, Content-Type: {logo.content_type}")
+    # --- END DEBUG PRINTS ---
+
     # Basic email validation
-    if '@' not in user_in.email or len(user_in.email.split('@')[1]) == 0:
+    if '@' not in email or len(email.split('@')[1]) == 0:
         raise HTTPException(status_code=400, detail="Invalid email format")
 
-    db_user = db.query(models.User).filter(models.User.email == user_in.email).first()
+    db_user = db.query(models.User).filter(models.User.email == email).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
 
     # Extract domain and check if a club with a similar name exists
-    email_domain = user_in.email.split('@')[1]
-    db_club = db.query(models.Club).filter(models.Club.name == user_in.club_name).first()
+    email_domain = email.split('@')[1]
+    db_club = db.query(models.Club).filter(models.Club.name == club_name).first()
     if db_club:
         raise HTTPException(status_code=400, detail="Club name already registered")
 
-    # Create the new club with the extracted domain
-    new_club = models.Club(name=user_in.club_name, email_domain=email_domain)
+    logo_url = None
+    if logo:
+        print("--- DEBUG: Entering 'if logo:' block to process file.") # DEBUG
+        UPLOAD_DIR = "uploads/logos"
+        print(f"--- DEBUG: UPLOAD_DIR resolved to: {UPLOAD_DIR}") # DEBUG
+        
+        try:
+            os.makedirs(UPLOAD_DIR, exist_ok=True)
+            print(f"--- DEBUG: Directory '{UPLOAD_DIR}' ensured.") # DEBUG
+        except Exception as e:
+            print(f"--- DEBUG: Error creating directory: {e}") # DEBUG
+            raise HTTPException(status_code=500, detail=f"Failed to create upload directory: {e}")
+
+        file_extension = os.path.splitext(logo.filename)[1]
+        unique_filename = f"{uuid.uuid4()}{file_extension}"
+        file_path = os.path.join(UPLOAD_DIR, unique_filename)
+        print(f"--- DEBUG: Full file_path: {file_path}") # DEBUG
+        
+        try:
+            # Save the file
+            with open(file_path, "wb") as buffer:
+                buffer.write(await logo.read())
+            print(f"--- DEBUG: File '{unique_filename}' written successfully.") # DEBUG
+            logo_url = file_path
+        except Exception as e:
+            print(f"--- DEBUG: Error writing file: {e}") # DEBUG
+            raise HTTPException(status_code=500, detail=f"Failed to write file: {e}")
+    else:
+        print("--- DEBUG: 'if logo:' block was skipped. Logo is None or False.") # DEBUG
+
+    # Create the new club with the extracted domain and logo URL
+    new_club = models.Club(name=club_name, email_domain=email_domain, logo_url=logo_url)
     db.add(new_club)
     db.commit()
     db.refresh(new_club)
 
     # Create the admin user for the new club
-    hashed_password = get_password_hash(user_in.password)
+    hashed_password = get_password_hash(password)
     new_user = models.User(
-        email=user_in.email,
+        email=email,
         hashed_password=hashed_password,
         club_id=new_club.id,
         role="admin"  # Assign 'admin' role

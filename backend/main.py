@@ -5,9 +5,55 @@ from . import models, database
 from .routers import members, auth, users, activities, debts, club
 
 
-models.Base.metadata.create_all(bind=database.engine)
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+import os
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+from . import models, database, security
+from .routers import members, auth, users, activities, debts, club
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Code to run on startup
+    print("INFO:     Application startup...")
+    db = database.SessionLocal()
+    try:
+        # Create all tables
+        models.Base.metadata.create_all(bind=database.engine)
+
+        # Create superadmin on first startup
+        superadmin_email = os.getenv("SUPERADMIN_EMAIL")
+        superadmin_password = os.getenv("SUPERADMIN_PASSWORD")
+
+        if superadmin_email and superadmin_password:
+            user = db.query(models.User).filter(models.User.email == superadmin_email).first()
+            if not user:
+                hashed_password = security.get_password_hash(superadmin_password)
+                # Superadmin does not belong to a club, so club_id is None
+                superadmin_user = models.User(
+                    email=superadmin_email,
+                    hashed_password=hashed_password,
+                    role="superadmin",
+                    club_id=None  # Superadmin is not tied to any specific club
+                )
+                db.add(superadmin_user)
+                db.commit()
+                print(f"INFO:     Superadmin user '{superadmin_email}' created.")
+            else:
+                print(f"INFO:     Superadmin user '{superadmin_email}' already exists.")
+        else:
+            print("INFO:     SUPERADMIN_EMAIL or SUPERADMIN_PASSWORD not set. Skipping superadmin creation.")
+
+    finally:
+        db.close()
+    
+    yield
+    # Code to run on shutdown
+    print("INFO:     Application shutdown.")
+
+
+app = FastAPI(lifespan=lifespan)
 
 # --- CORS Middleware ---
 origins = [

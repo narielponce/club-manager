@@ -22,12 +22,10 @@ services:
     container_name: club_manager_db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
-    environment:
-      - POSTGRES_USER=clubuser
-      - POSTGRES_PASSWORD=local123
-      - POSTGRES_DB=clubdb
+    env_file:
+      - .env
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U clubuser -d clubdb"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-clubuser} -d ${POSTGRES_DB:-clubdb}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -39,13 +37,12 @@ services:
       dockerfile: Dockerfile.backend
     container_name: club_manager_backend
     volumes:
-      - ./uploads:/code/backend/uploads
+      - uploads_data:/code/backend/uploads
     depends_on:
       db:
         condition: service_healthy
-    environment:
-      - DATABASE_URL=postgresql://clubuser:local123@db/clubdb
-      - SECRET_KEY=e8b9f3a8c7d6e5f4a3b2c1d0e9f8a7b6c5d4e3f2a1b0c9d8e7f6a5b4c3d2e1f0
+    env_file:
+      - .env
     restart: unless-stopped
 
   frontend:
@@ -53,9 +50,6 @@ services:
       context: .
       dockerfile: Dockerfile.frontend
     container_name: club_manager_frontend
-    # The port is no longer exposed to the host. The proxy will connect to it.
-    # ports:
-    #   - "8080:80"
     restart: unless-stopped
 
   certbot:
@@ -67,3 +61,4 @@ services:
 
 volumes:
   postgres_data:
+  uploads_data:
