@@ -156,7 +156,7 @@ const formatPhoneNumber = (phoneNumber) => {
                 <td>{{ member.email }}</td>
                 <td>{{ formatPhoneNumber(member.phone) }}</td>
                 <td class="text-end">
-                  <button v-if="canManagePayments" @click="viewPayments(member)" class="btn btn-info btn-sm me-2">Pagos</button>
+                  <button v-if="canManagePayments" @click="viewPayments(member)" class="btn btn-info btn-sm me-2">Estado de Cuenta</button>
                   <button v-if="canManageActivities" @click="manageActivities(member)" class="btn btn-secondary btn-sm me-2">Actividades</button>
                   <button v-if="isAdmin" @click="startEditing(member)" class="btn btn-primary btn-sm me-2">Editar</button>
                   <button v-if="isAdmin" @click="handleDelete(member.id)" class="btn btn-danger btn-sm">Borrar</button>

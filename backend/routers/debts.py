@@ -18,28 +18,31 @@ router = APIRouter(
 def create_payment_for_debt(
     debt_id: int,
     payment_date: str = Form(...),
+    amount: float = Form(...),
     receipt: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_user)
 ):
     """
-    Create a payment for a specific debt, upload a receipt, and mark the debt as paid.
+    Create a payment for a specific debt with a variable amount, upload an optional receipt,
+    and update the debt's 'is_paid' status based on the total payments.
     """
-    db_debt = db.query(models.Debt).join(models.Member).filter(
+    db_debt = db.query(models.Debt).options(selectinload(models.Debt.payments)).join(models.Member).filter(
         models.Debt.id == debt_id,
         models.Member.club_id == current_user.club_id
     ).first()
 
     if not db_debt:
         raise HTTPException(status_code=404, detail="Debt not found")
-    
-    if db_debt.is_paid:
-        raise HTTPException(status_code=400, detail="Debt is already paid")
 
     try:
         parsed_payment_date = datetime.strptime(payment_date, "%Y-%m-%d").date()
     except ValueError:
         raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD.")
+
+    payment_amount = Decimal(str(amount))
+    if payment_amount <= 0:
+        raise HTTPException(status_code=400, detail="Payment amount must be positive.")
 
     receipt_url = None
     if receipt:
@@ -54,19 +57,30 @@ def create_payment_for_debt(
             file_object.write(receipt.file.read())
         receipt_url = file_location
 
+    # Create and save the new payment
     db_payment = models.Payment(
-        amount=db_debt.total_amount,
+        amount=payment_amount,
         payment_date=parsed_payment_date,
         debt_id=debt_id,
         receipt_url=receipt_url
     )
-    
-    db_debt.is_paid = True
-    
     db.add(db_payment)
-    db.add(db_debt)
     db.commit()
     db.refresh(db_payment)
+
+    # Now, update the debt status
+    # We need to reload the debt to get the new payment in the relationship
+    db.refresh(db_debt)
+    
+    total_paid = sum(p.amount for p in db_debt.payments)
+    
+    if total_paid >= db_debt.total_amount:
+        db_debt.is_paid = True
+    else:
+        db_debt.is_paid = False
+    
+    db.add(db_debt)
+    db.commit()
     
     return db_payment
 

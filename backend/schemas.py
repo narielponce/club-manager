@@ -137,3 +137,20 @@ class Debt(DebtBase):
     payments: List[Payment] = []
     class Config:
         from_attributes = True
+
+# --- Schemas for Member Account Statement ---
+class TransactionType(str, enum.Enum):
+    DEBT = "debt"
+    PAYMENT = "payment"
+
+class StatementItem(BaseModel):
+    transaction_date: date
+    transaction_type: TransactionType
+    concept: str
+    amount: float
+    balance: float
+    debt_id: int
+
+class MemberStatement(BaseModel):
+    items: List[StatementItem]
+    final_balance: float

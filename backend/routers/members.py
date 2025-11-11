@@ -152,3 +152,66 @@ def get_debts_for_member(
     ).filter(models.Debt.member_id == member_id).order_by(models.Debt.month.desc()).all()
     
     return debts
+
+@router.get("/{member_id}/statement/", response_model=schemas.MemberStatement)
+def get_member_statement(
+    member_id: int,
+    db: Session = Depends(get_db),
+    current_user: schemas.User = Depends(get_current_user)
+):
+    """
+    Get a chronological account statement for a member, including debts and payments.
+    """
+    # 1. Verify member exists and belongs to the user's club
+    db_member = db.query(models.Member).filter(
+        models.Member.id == member_id,
+        models.Member.club_id == current_user.club_id
+    ).first()
+    if not db_member:
+        raise HTTPException(status_code=404, detail="Member not found in this club")
+
+    # 2. Fetch all debts and associated payments for the member
+    debts = db.query(models.Debt).options(
+        selectinload(models.Debt.payments)
+    ).filter(models.Debt.member_id == member_id).all()
+
+    # 3. Create a unified list of transactions
+    transactions = []
+    for debt in debts:
+        # Add the debt itself as a transaction
+        concept = f"Deuda de {debt.month.strftime('%B %Y')}"
+        transactions.append({
+            "date": debt.month,
+            "type": schemas.TransactionType.DEBT,
+            "concept": concept,
+            "amount": float(debt.total_amount),
+            "debt_id": debt.id
+        })
+        # Add all payments for this debt as transactions
+        for payment in debt.payments:
+            transactions.append({
+                "date": payment.payment_date,
+                "type": schemas.TransactionType.PAYMENT,
+                "concept": f"Pago (Recibo: {payment.id})",
+                "amount": -float(payment.amount),
+                "debt_id": debt.id
+            })
+
+    # 4. Sort transactions chronologically
+    transactions.sort(key=lambda x: x["date"])
+
+    # 5. Calculate running balance and create final statement items
+    running_balance = 0.0
+    statement_items = []
+    for t in transactions:
+        running_balance += t["amount"]
+        statement_items.append(schemas.StatementItem(
+            transaction_date=t["date"],
+            transaction_type=t["type"],
+            concept=t["concept"],
+            amount=t["amount"],
+            balance=running_balance,
+            debt_id=t["debt_id"]
+        ))
+
+    return schemas.MemberStatement(items=statement_items, final_balance=running_balance)

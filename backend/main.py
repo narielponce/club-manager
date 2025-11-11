@@ -1,7 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import os
-from contextlib import asynccontextmanager # Added this import
+from contextlib import asynccontextmanager
+import locale # Added this import
 
 from . import models, database, security
 from .routers import members, auth, users, activities, debts, club, superadmin
@@ -10,6 +11,11 @@ from .routers import members, auth, users, activities, debts, club, superadmin
 async def lifespan(app: FastAPI):
     # Code to run on startup
     print("INFO:     Application startup...")
+    # Set locale for Spanish month names
+    try:
+        locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
+    except locale.Error:
+        print("WARNING: Could not set locale to es_ES.UTF-8. Month names might not be in Spanish.")
     db = database.SessionLocal()
     try:
         # Create all tables

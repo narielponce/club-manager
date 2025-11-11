@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, computed, watch } from 'vue'
 import MembersList from '../components/MembersList.vue'
-import MemberPaymentsModal from '../components/MemberPaymentsModal.vue'
+import MemberStatementModal from '../components/MemberStatementModal.vue'
 import MemberActivitiesModal from '../components/MemberActivitiesModal.vue'
 import AddMemberModal from '../components/AddMemberModal.vue'
 import { apiFetch } from '../services/api.js'
@@ -120,7 +120,7 @@ const handleMemberUpdateFromModal = (updatedMember) => {
       @member-added="handleMembersChanged"
     />
 
-    <MemberPaymentsModal
+    <MemberStatementModal
       v-if="isPaymentsModalVisible"
       :show="isPaymentsModalVisible"
       :member-id="selectedMember?.id"
