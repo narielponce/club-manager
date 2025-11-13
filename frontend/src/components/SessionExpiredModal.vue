@@ -2,11 +2,15 @@
 import { isSessionModalVisible, sessionModalMessage, onSessionModalConfirm, hideSessionModal } from '../services/session.js';
 
 const handleConfirm = () => {
-  // First, hide the modal
+  // Store the callback before it gets reset
+  const callback = onSessionModalConfirm.value;
+  
+  // Now, hide the modal
   hideSessionModal();
-  // Then, execute the callback (e.g., redirect to login)
-  if (typeof onSessionModalConfirm.value === 'function') {
-    onSessionModalConfirm.value();
+
+  // Finally, execute the stored callback
+  if (typeof callback === 'function') {
+    callback();
   }
 };
 </script>
