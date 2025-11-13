@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, selectinload
-from typing import List
+from sqlalchemy import or_
+from typing import List, Optional
 
 from .. import models, schemas
 from ..database import get_db
@@ -16,15 +17,27 @@ def get_all_members(
     db: Session = Depends(get_db),
     current_user: schemas.User = Depends(get_current_user),
     page: int = 1,
-    size: int = 10
+    size: int = 10,
+    search: Optional[str] = None
 ):
     """
     Get a paginated list of active members for the current user's club.
+    Can be filtered by a search term matching DNI or last name.
     """
     query = db.query(models.Member).filter(
         models.Member.club_id == current_user.club_id,
         models.Member.is_active == True
     )
+
+    if search:
+        search_term = f"%{search}%"
+        query = query.filter(
+            or_(
+                models.Member.last_name.ilike(search_term),
+                models.Member.dni == search
+            )
+        )
+
     total = query.count()
     items = query.offset((page - 1) * size).limit(size).all()
     return {"items": items, "total": total}

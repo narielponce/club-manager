@@ -1,4 +1,5 @@
-import { token, logout } from './auth.js';
+import { token, clearAuthData } from './auth.js';
+import { showSessionModal } from './session.js';
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || '';
 
@@ -23,8 +24,12 @@ export async function apiFetch(endpoint, options = {}) {
   const response = await fetch(`${API_URL}${endpoint}`, config);
 
   if (response.status === 401) {
-    // Token is invalid or expired, log the user out
-    logout();
+    // Token is invalid or expired. Clear auth data and show the session modal.
+    clearAuthData();
+    showSessionModal(
+      "Tu sesión ha expirado. Por favor, inicia sesión de nuevo.",
+      () => { window.location.href = '/login'; }
+    );
     throw new Error('Session expired. Please log in again.');
   }
 

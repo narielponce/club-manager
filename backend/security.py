@@ -12,7 +12,7 @@ from .database import get_db
 
 # --- Configuration ---
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 15
 
 # --- Password Hashing ---
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
