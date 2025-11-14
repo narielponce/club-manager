@@ -50,11 +50,12 @@ const handleSubmit = async () => {
     password.value = ''
     role.value = ''
     emit('user-added')
-  } catch (e) {
-    error.value = e.message
-  }
-}
-
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            error.value = e.message
+          }
+        }
+      }
 watch(() => props.show, (newVal) => {
   if (!newVal) {
     setTimeout(() => {

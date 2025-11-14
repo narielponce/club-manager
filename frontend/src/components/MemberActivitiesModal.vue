@@ -23,25 +23,28 @@ const fetchAllActivities = async () => {
     isLoading.value = true
     error.value = null
     allActivities.value = await apiFetch('/activities/')
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    isLoading.value = false
-  }
-}
-
-const handleCheckboxChange = async (activity, isChecked) => {
-  if (!props.member) return
-  const url = `/members/${props.member.id}/activities/${activity.id}`
-  const method = isChecked ? 'POST' : 'DELETE'
-  try {
-    const updatedMember = await apiFetch(url, { method })
-    emit('update:member', updatedMember)
-  } catch (e) {
-    alert(`Error al actualizar la actividad: ${e.message}`)
-  }
-}
-
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            error.value = e.message
+          }
+        } finally {
+          isLoading.value = false
+        }
+      }
+  
+      const handleCheckboxChange = async (activity, isChecked) => {
+        if (!props.member) return
+        const url = `/members/${props.member.id}/activities/${activity.id}`
+        const method = isChecked ? 'POST' : 'DELETE'
+        try {
+          const updatedMember = await apiFetch(url, { method })
+          emit('update:member', updatedMember)
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            alert(`Error al actualizar la actividad: ${e.message}`)
+          }
+        }
+      }
 onMounted(() => {
   if (props.show) {
     fetchAllActivities()

@@ -37,30 +37,33 @@ const handleBaseFeeSubmit = async () => {
       currentUser.value.club = updatedClub
     }
     baseFeeMessage.value = 'Cuota social actualizada con éxito!'
-  } catch (e) {
-    baseFeeError.value = e.message
-  }
-}
-
-const handleDebtSubmit = async () => {
-  debtError.value = null
-  debtMessage.value = ''
-  isGenerating.value = true
-  try {
-    const response = await apiFetch('/generate-monthly-debt', {
-      method: 'POST',
-      body: JSON.stringify({
-        month: selectedMonth.value
-      }),
-    })
-    debtMessage.value = response.message
-  } catch (e) {
-    debtError.value = e.message
-  } finally {
-    isGenerating.value = false
-  }
-}
-</script>
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            baseFeeError.value = e.message
+          }
+        }
+      }
+  
+      const handleDebtSubmit = async () => {
+        debtError.value = null
+        debtMessage.value = ''
+        isGenerating.value = true
+        try {
+          const response = await apiFetch('/generate-monthly-debt', {
+            method: 'POST',
+            body: JSON.stringify({
+              month: selectedMonth.value
+            }),
+          })
+          debtMessage.value = response.message
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            debtError.value = e.message
+          }
+        } finally {
+          isGenerating.value = false
+        }
+      }</script>
 
 <template>
   <div>

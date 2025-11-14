@@ -46,11 +46,12 @@ const handleSubmit = async () => {
     message.value = 'Socio creado con éxito! Puedes cerrar esta ventana o añadir otro.'
     resetForm()
     emit('member-added')
-  } catch (e) {
-    error.value = e.message
-  }
-}
-
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            error.value = e.message
+          }
+        }
+      }
 // Reset form when modal is closed
 watch(() => props.show, (newVal) => {
   if (!newVal) {

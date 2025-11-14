@@ -49,54 +49,58 @@ const handleDelete = async (memberId) => {
   try {
     await apiFetch(`/members/${memberId}`, { method: 'DELETE' })
     emit('member-deleted')
-  } catch (error) {
-    alert('Error al borrar socio: ' + error.message)
-  }
-}
-
-// --- Edit Logic ---
-const editingMemberId = ref(null)
-const editFormData = reactive({
-  first_name: '',
-  last_name: '',
-  email: '',
-  phone: '',
-  dni: '',
-  birth_date: '',
-})
-
-const startEditing = (member) => {
-  editingMemberId.value = member.id
-  editFormData.first_name = member.first_name
-  editFormData.last_name = member.last_name
-  editFormData.email = member.email
-  editFormData.phone = member.phone
-  editFormData.dni = member.dni
-  editFormData.birth_date = member.birth_date
-}
-
-const cancelEditing = () => {
-  editingMemberId.value = null
-}
-
-const handleUpdate = async (memberId) => {
-  try {
-    const payload = { ...editFormData }
-    for (const key in payload) {
-      if (payload[key] === '' || payload[key] === null) {
-        delete payload[key]
+      } catch (error) {
+        if (error.name !== "SessionExpiredError") {
+          alert('Error al borrar socio: ' + error.message)
+        }
       }
     }
-    await apiFetch(`/members/${memberId}`, {
-      method: 'PUT',
-      body: JSON.stringify(payload),
+
+    // --- Edit Logic ---
+    const editingMemberId = ref(null)
+    const editFormData = reactive({
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      dni: '',
+      birth_date: '',
     })
-    emit('member-updated')
-    editingMemberId.value = null
-  } catch (error) {
-    alert('Error al actualizar socio: ' + error.message)
-  }
-}
+
+    const startEditing = (member) => {
+      editingMemberId.value = member.id
+      editFormData.first_name = member.first_name
+      editFormData.last_name = member.last_name
+      editFormData.email = member.email
+      editFormData.phone = member.phone
+      editFormData.dni = member.dni
+      editFormData.birth_date = member.birth_date
+    }
+
+    const cancelEditing = () => {
+      editingMemberId.value = null
+    }
+
+    const handleUpdate = async (memberId) => {
+      try {
+        const payload = { ...editFormData }
+        for (const key in payload) {
+          if (payload[key] === '' || payload[key] === null) {
+            delete payload[key]
+          }
+        }
+        await apiFetch(`/members/${memberId}`, {
+          method: 'PUT',
+          body: JSON.stringify(payload),
+        })
+        emit('member-updated')
+        editingMemberId.value = null
+      } catch (error) {
+        if (error.name !== "SessionExpiredError") {
+          alert('Error al actualizar socio: ' + error.message)
+        }
+      }
+    }
 
 // --- Modals ---
 const viewPayments = (member) => {

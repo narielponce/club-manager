@@ -38,6 +38,7 @@ export async function login(email, password) {
 export function logout() {
   clearAuthData()
   showSessionModal(
+    "Sesión Finalizada",
     "Has cerrado sesión correctamente.",
     () => {
       // Use a hard redirect to ensure all state is cleared

@@ -5,10 +5,14 @@ import MemberStatementModal from '../components/MemberStatementModal.vue'
 import MemberActivitiesModal from '../components/MemberActivitiesModal.vue'
 import AddMemberModal from '../components/AddMemberModal.vue'
 import { apiFetch } from '../services/api.js'
+import { currentUser } from '../services/user.js'
 
 const members = ref([])
 const error = ref(null)
 const isLoading = ref(true)
+
+// --- Role-based access control ---
+const isAdmin = computed(() => currentUser.value?.role === 'admin')
 
 // --- Search State ---
 const searchQuery = ref('') // For the input field
@@ -35,13 +39,14 @@ const fetchMembers = async () => {
     const data = await apiFetch(url)
     members.value = data.items
     totalMembers.value = data.total
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    isLoading.value = false
-  }
-}
-
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            error.value = e.message
+          }
+        } finally {
+          isLoading.value = false
+        }
+      }
 // Fetch members when the component is first mounted
 onMounted(fetchMembers)
 
@@ -114,7 +119,7 @@ const handleMemberUpdateFromModal = (updatedMember) => {
   <div>
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1>Gestión de Socios</h1>
-      <button class="btn btn-primary" @click="isAddMemberModalVisible = true">Nuevo Socio</button>
+      <button v-if="isAdmin" class="btn btn-primary" @click="isAddMemberModalVisible = true">Nuevo Socio</button>
     </div>
 
     <!-- Search Form -->

@@ -21,40 +21,44 @@ const handleDelete = async (activityId) => {
       method: 'DELETE',
     })
     emit('activity-deleted')
-  } catch (error) {
-    alert('Error al eliminar actividad: ' + error.message)
-  }
-}
+      } catch (error) {
+        if (error.name !== "SessionExpiredError") {
+          alert('Error al eliminar actividad: ' + error.message)
+        }
+      }
+    }
 
-// --- Edit Logic ---
-const editingActivityId = ref(null)
-const editFormData = reactive({ name: '', monthly_cost: '' })
+    // --- Edit Logic ---
+    const editingActivityId = ref(null)
+    const editFormData = reactive({ name: '', monthly_cost: '' })
 
-const startEditing = (activity) => {
-  editingActivityId.value = activity.id
-  editFormData.name = activity.name
-  editFormData.monthly_cost = activity.monthly_cost
-}
+    const startEditing = (activity) => {
+      editingActivityId.value = activity.id
+      editFormData.name = activity.name
+      editFormData.monthly_cost = activity.monthly_cost
+    }
 
-const cancelEditing = () => {
-  editingActivityId.value = null
-}
+    const cancelEditing = () => {
+      editingActivityId.value = null
+    }
 
-const handleUpdate = async (activityId) => {
-  try {
-    await apiFetch(`/activities/${activityId}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        name: editFormData.name,
-        monthly_cost: parseFloat(editFormData.monthly_cost)
-      }),
-    })
-    emit('activity-updated')
-    editingActivityId.value = null // Exit editing mode
-  } catch (error) {
-    alert('Error al actualizar actividad: ' + error.message)
-  }
-}
+    const handleUpdate = async (activityId) => {
+      try {
+        await apiFetch(`/activities/${activityId}`, {
+          method: 'PUT',
+          body: JSON.stringify({
+            name: editFormData.name,
+            monthly_cost: parseFloat(editFormData.monthly_cost)
+          }),
+        })
+        emit('activity-updated')
+        editingActivityId.value = null // Exit editing mode
+      } catch (error) {
+        if (error.name !== "SessionExpiredError") {
+          alert('Error al actualizar actividad: ' + error.message)
+        }
+      }
+    }
 </script>
 
 <template>

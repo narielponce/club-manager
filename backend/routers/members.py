@@ -42,7 +42,7 @@ def get_all_members(
     items = query.offset((page - 1) * size).limit(size).all()
     return {"items": items, "total": total}
 
-@router.post("", response_model=schemas.Member, status_code=201, dependencies=[Depends(require_roles(['admin', 'tesorero']))])
+@router.post("", response_model=schemas.Member, status_code=201, dependencies=[Depends(require_roles(['admin']))])
 def create_new_member(member_in: schemas.MemberCreate, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
     db_member_exists = db.query(models.Member).filter(
         models.Member.club_id == current_user.club_id,

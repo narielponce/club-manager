@@ -38,11 +38,12 @@ const handleSubmit = async () => {
     // Don't reset form fully, just clear the name for quick multi-add
     newActivity.name = '' 
     emit('activity-added')
-  } catch (e) {
-    error.value = e.message
-  }
-}
-
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            error.value = e.message
+          }
+        }
+      }
 // Reset form when modal is closed
 watch(() => props.show, (newVal) => {
   if (!newVal) {

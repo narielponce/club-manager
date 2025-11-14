@@ -24,38 +24,41 @@ const handleDelete = async (userId) => {
       method: 'DELETE',
     })
     emit('user-deleted')
-  } catch (error) {
-    alert('Error al desactivar usuario: ' + error.message)
-  }
-}
-
-// --- Edit Logic ---
-const editingUserId = ref(null)
-const editFormData = reactive({ role: '', is_active: true })
-
-const startEditing = (user) => {
-  editingUserId.value = user.id
-  editFormData.role = user.role
-  editFormData.is_active = user.is_active
-}
-
-const cancelEditing = () => {
-  editingUserId.value = null
-}
-
-const handleUpdate = async (userId) => {
-  try {
-    await apiFetch(`/club/users/${userId}`, {
-      method: 'PUT',
-      body: JSON.stringify(editFormData),
-    })
-    emit('user-updated')
-    editingUserId.value = null // Exit editing mode
-  } catch (error) {
-    alert('Error al actualizar usuario: ' + error.message)
-  }
-}
-</script>
+        } catch (error) {
+          if (error.name !== "SessionExpiredError") {
+            alert('Error al desactivar usuario: ' + error.message)
+          }
+        }
+      }
+  
+      // --- Edit Logic ---
+      const editingUserId = ref(null)
+      const editFormData = reactive({ role: '', is_active: true })
+  
+      const startEditing = (user) => {
+        editingUserId.value = user.id
+        editFormData.role = user.role
+        editFormData.is_active = user.is_active
+      }
+  
+      const cancelEditing = () => {
+        editingUserId.value = null
+      }
+  
+      const handleUpdate = async (userId) => {
+        try {
+          await apiFetch(`/club/users/${userId}`, {
+            method: 'PUT',
+            body: JSON.stringify(editFormData),
+          })
+          emit('user-updated')
+          editingUserId.value = null // Exit editing mode
+        } catch (error) {
+          if (error.name !== "SessionExpiredError") {
+            alert('Error al actualizar usuario: ' + error.message)
+          }
+        }
+      }</script>
 
 <template>
   <div class="card shadow-sm">

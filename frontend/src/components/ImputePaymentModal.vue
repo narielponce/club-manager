@@ -50,13 +50,14 @@ const handleSubmit = async () => {
     });
     emit('payment-imputed');
     emit('close');
-  } catch (e) {
-    error.value = e.message;
-  } finally {
-    isLoading.value = false;
-  }
-};
-</script>
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            error.value = e.message;
+          }
+        } finally {
+          isLoading.value = false;
+        }
+      };</script>
 
 <template>
   <div class="modal fade" :class="{ 'show': show, 'd-block': show }" tabindex="-1" role="dialog">

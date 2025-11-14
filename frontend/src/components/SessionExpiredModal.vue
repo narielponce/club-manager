@@ -1,5 +1,5 @@
 <script setup>
-import { isSessionModalVisible, sessionModalMessage, onSessionModalConfirm, hideSessionModal } from '../services/session.js';
+import { isSessionModalVisible, sessionModalTitle, sessionModalMessage, onSessionModalConfirm, hideSessionModal } from '../services/session.js';
 
 const handleConfirm = () => {
   // Store the callback before it gets reset
@@ -20,7 +20,7 @@ const handleConfirm = () => {
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Fin de Sesión</h5>
+          <h5 class="modal-title">{{ sessionModalTitle }}</h5>
         </div>
         <div class="modal-body">
           <p>{{ sessionModalMessage }}</p>

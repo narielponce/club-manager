@@ -14,13 +14,14 @@ const fetchActivities = async () => {
     isLoading.value = true
     error.value = null
     activities.value = await apiFetch('/activities/')
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    isLoading.value = false
-  }
-}
-
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            error.value = e.message
+          }
+        } finally {
+          isLoading.value = false
+        }
+      }
 onMounted(fetchActivities)
 
 const handleActivitiesChanged = () => {

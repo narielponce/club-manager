@@ -26,13 +26,14 @@ const fetchStatement = async () => {
     isLoading.value = true
     error.value = null
     statement.value = await apiFetch(`/members/${props.memberId}/statement/`)
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    isLoading.value = false
-  }
-}
-
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            error.value = e.message
+          }
+        } finally {
+          isLoading.value = false
+        }
+      }
 // Watch for the modal to become visible and then fetch data
 watch(() => props.show, (newVal) => {
   if (newVal) {

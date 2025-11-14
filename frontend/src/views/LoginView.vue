@@ -2,19 +2,23 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '../services/auth.js'
+import { showSessionModal } from '../services/session.js'
 
 const email = ref('')
 const password = ref('')
-const error = ref(null)
 const router = useRouter()
 
 const handleSubmit = async () => {
-  error.value = null
   try {
     await login(email.value, password.value)
     router.push('/') // Redirect to dashboard on success
   } catch (err) {
-    error.value = err.message
+    // Show a modal on login failure
+    showSessionModal(
+      "Error de Autenticación",
+      "Usuario o contraseña incorrecto.",
+      () => {} // Empty callback, just closes the modal
+    )
   }
 }
 </script>
@@ -50,9 +54,6 @@ const handleSubmit = async () => {
           <button type="submit" class="btn btn-primary">Login</button>
         </div>
       </form>
-      <div v-if="error" class="alert alert-danger mt-3" role="alert">
-        {{ error }}
-      </div>
     </div>
   </div>
 </template>

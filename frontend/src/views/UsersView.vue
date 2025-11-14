@@ -21,13 +21,14 @@ const fetchData = async () => {
     ])
     users.value = usersData
     clubSettings.value = settingsData
-  } catch (e) {
-    error.value = e.message
-  } finally {
-    isLoading.value = false
-  }
-}
-
+        } catch (e) {
+          if (e.name !== "SessionExpiredError") {
+            error.value = e.message
+          }
+        } finally {
+          isLoading.value = false
+        }
+      }
 onMounted(fetchData)
 
 const handleUsersChanged = () => {
