@@ -7,6 +7,7 @@ import SettingsView from '../views/SettingsView.vue'
 import SuperadminLoginView from '../views/SuperadminLoginView.vue'
 import CreateClubView from '../views/CreateClubView.vue'
 import SuperadminDashboardView from '../views/SuperadminDashboardView.vue'
+import FinancesView from '../views/FinancesView.vue'
 import { token } from '../services/auth.js'
 
 const router = createRouter({
@@ -34,6 +35,12 @@ const router = createRouter({
       path: '/settings',
       name: 'settings',
       component: SettingsView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/finances',
+      name: 'finances',
+      component: FinancesView,
       meta: { requiresAuth: true }
     },
     {

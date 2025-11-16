@@ -45,7 +45,14 @@ export async function apiFetch(endpoint, options = {}) {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.detail || `API request failed with status ${response.status}`);
+    let errorMessage = `API request failed with status ${response.status}`;
+    if (typeof errorData.detail === 'string') {
+      errorMessage = errorData.detail;
+    } else if (typeof errorData.detail === 'object') {
+      // For Pydantic validation errors, which are often a list of objects
+      errorMessage = JSON.stringify(errorData.detail, null, 2);
+    }
+    throw new Error(errorMessage);
   }
 
   // For DELETE requests with 204 No Content, response.json() will fail

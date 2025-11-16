@@ -2,17 +2,12 @@
 import { ref, onMounted } from 'vue'
 import { currentUser } from '../services/user.js'
 import { apiFetch } from '../services/api.js'
+import CategoryManager from '../components/CategoryManager.vue'
 
 // --- Base Fee Logic ---
 const baseFee = ref(0)
 const baseFeeMessage = ref('')
 const baseFeeError = ref(null)
-
-// --- Debt Generation Logic ---
-const selectedMonth = ref(new Date().toISOString().slice(0, 7))
-const debtMessage = ref('')
-const debtError = ref(null)
-const isGenerating = ref(false)
 
 // --- Lifecycle ---
 onMounted(() => {
@@ -37,33 +32,13 @@ const handleBaseFeeSubmit = async () => {
       currentUser.value.club = updatedClub
     }
     baseFeeMessage.value = 'Cuota social actualizada con éxito!'
-        } catch (e) {
-          if (e.name !== "SessionExpiredError") {
-            baseFeeError.value = e.message
-          }
+  } catch (e) {
+    if (e.name !== "SessionExpiredError") {
+          baseFeeError.value = e.message
         }
-      }
-  
-      const handleDebtSubmit = async () => {
-        debtError.value = null
-        debtMessage.value = ''
-        isGenerating.value = true
-        try {
-          const response = await apiFetch('/generate-monthly-debt', {
-            method: 'POST',
-            body: JSON.stringify({
-              month: selectedMonth.value
-            }),
-          })
-          debtMessage.value = response.message
-        } catch (e) {
-          if (e.name !== "SessionExpiredError") {
-            debtError.value = e.message
-          }
-        } finally {
-          isGenerating.value = false
-        }
-      }</script>
+  }
+}
+</script>
 
 <template>
   <div>
@@ -91,34 +66,8 @@ const handleBaseFeeSubmit = async () => {
       </div>
     </div>
 
-    <!-- Debt Generation Card -->
-    <div class="card shadow-sm mt-4">
-      <div class="card-header">
-        <h3>Generar Deuda Mensual</h3>
-      </div>
-      <div class="card-body">
-        <p class="text-muted">Seleccionar año y mes y hacer clic en "Generar" para crear la cuota mensual de todos los socios activos.</p>
-        <form @submit.prevent="handleDebtSubmit">
-          <div class="mb-3">
-            <label for="debt-month" class="form-label">Mes a Generar (AAAA-MM)</label>
-            <input 
-              type="month" 
-              id="debt-month" 
-              class="form-control" 
-              v-model="selectedMonth" 
-              required
-              style="max-width: 250px;"
-            >
-          </div>
-          <button type="submit" class="btn btn-primary" :disabled="isGenerating">
-            <span v-if="isGenerating" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            {{ isGenerating ? 'Generando...' : 'Generar Deuda' }}
-          </button>
-        </form>
-        <div v-if="debtMessage" class="alert alert-success mt-3 py-2">{{ debtMessage }}</div>
-        <div v-if="debtError" class="alert alert-danger mt-3 py-2">{{ debtError }}</div>
-      </div>
-    </div>
+    <!-- Category Manager Component -->
+    <CategoryManager />
 
   </div>
 </template>

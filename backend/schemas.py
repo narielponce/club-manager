@@ -154,3 +154,55 @@ class StatementItem(BaseModel):
 class MemberStatement(BaseModel):
     items: List[StatementItem]
     final_balance: float
+
+# --- Schemas for Categories ---
+class CategoryType(str, enum.Enum):
+    INCOME = "income"
+    EXPENSE = "expense"
+
+class CategoryBase(BaseModel):
+    name: str
+    type: CategoryType
+
+class CategoryCreate(CategoryBase):
+    pass
+
+class CategoryUpdate(BaseModel):
+    name: Optional[str] = None
+    type: Optional[CategoryType] = None
+
+class Category(CategoryBase):
+    id: int
+    club_id: int
+    class Config:
+        from_attributes = True
+
+# --- Schemas for Club Transactions ---
+class ClubTransactionBase(BaseModel):
+    transaction_date: date
+    description: str
+    amount: float
+    type: CategoryType # Use CategoryType enum for transaction type
+    category_id: Optional[int] = None
+    receipt_url: Optional[str] = None
+
+class ClubTransactionCreate(BaseModel):
+    transaction_date: date
+    description: str
+    amount: float
+    type: CategoryType
+    category_id: Optional[int] = None # Category is optional for creation
+
+class ClubTransaction(ClubTransactionBase):
+    id: int
+    user_id: int
+    club_id: int
+    class Config:
+        from_attributes = True
+
+class ClubTransactionPage(BaseModel):
+    items: List[ClubTransaction]
+    total: int
+
+class Balance(BaseModel):
+    balance: float

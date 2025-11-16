@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 import locale # Added this import
 
 from . import models, database, security
-from .routers import members, auth, users, activities, debts, club, superadmin
+from .routers import members, auth, users, activities, debts, club, superadmin, categories, transactions
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -78,6 +78,8 @@ app.include_router(activities.router)
 app.include_router(debts.router)
 app.include_router(club.router)
 app.include_router(superadmin.router)
+app.include_router(categories.router)
+app.include_router(transactions.router)
 
 
 @app.get("/")

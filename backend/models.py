@@ -105,6 +105,42 @@ class Debt(Base):
     items = relationship("DebtItem", back_populates="debt", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="debt")
 
+# --- New Models for Club Finances ---
+class CategoryType(enum.Enum):
+    INCOME = "income"
+    EXPENSE = "expense"
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True, nullable=False)
+    type = Column(SQLAlchemyEnum(CategoryType, name="category_type_enum", values_callable=lambda obj: [e.value for e in obj], native_enum=False), nullable=False)
+
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False)
+    club = relationship("Club")
+
+    transactions = relationship("ClubTransaction", back_populates="category")
+
+class ClubTransaction(Base):
+    __tablename__ = "club_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    transaction_date = Column(Date, nullable=False)
+    description = Column(String, nullable=False)
+    amount = Column(Numeric(10, 2), nullable=False)
+    type = Column(SQLAlchemyEnum(CategoryType, name="category_type_enum", values_callable=lambda obj: [e.value for e in obj], native_enum=False), nullable=False)
+    receipt_url = Column(String, nullable=True)
+
+    category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
+    category = relationship("Category", back_populates="transactions")
+
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    user = relationship("User")
+
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False)
+    club = relationship("Club")
+
 class DebtItem(Base):
     __tablename__ = "debt_items"
 

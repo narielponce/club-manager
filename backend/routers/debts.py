@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from .. import models, schemas
 from ..database import get_db
-from ..security import get_current_user, get_current_admin_user
+from ..security import get_current_user, get_current_finance_user
 
 router = APIRouter(
     tags=["debts"],
@@ -21,11 +21,12 @@ def create_payment_for_debt(
     amount: float = Form(...),
     receipt: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Create a payment for a specific debt with a variable amount, upload an optional receipt,
     and update the debt's 'is_paid' status based on the total payments.
+    Also creates a corresponding income transaction for the club.
     """
     db_debt = db.query(models.Debt).options(selectinload(models.Debt.payments)).join(models.Member).filter(
         models.Debt.id == debt_id,
@@ -81,6 +82,45 @@ def create_payment_for_debt(
     
     db.add(db_debt)
     db.commit()
+
+    # --- Create corresponding ClubTransaction (Income) ---
+    db_member = db.query(models.Member).filter(models.Member.id == db_debt.member_id).first()
+    if db_member:
+        description = f"Pago de cuota de {db_member.first_name} {db_member.last_name} ({db_member.email})"
+    else:
+        description = f"Pago de cuota (Deuda ID: {debt_id})"
+    
+    # Get or create the default category for member payments
+    category_name = "Cuota de Socio"
+    payment_category = db.query(models.Category).filter(
+        models.Category.club_id == current_user.club_id,
+        models.Category.name == category_name,
+        models.Category.type == models.CategoryType.INCOME
+    ).first()
+    
+    if not payment_category:
+        payment_category = models.Category(
+            name=category_name,
+            type=models.CategoryType.INCOME,
+            club_id=current_user.club_id
+        )
+        db.add(payment_category)
+        db.commit()
+        db.refresh(payment_category)
+    
+    new_club_transaction = models.ClubTransaction(
+        transaction_date=parsed_payment_date,
+        description=description,
+        amount=payment_amount,
+        type=models.CategoryType.INCOME,
+        category_id=payment_category.id,
+        receipt_url=receipt_url,
+        user_id=current_user.id,
+        club_id=current_user.club_id
+    )
+    db.add(new_club_transaction)
+    db.commit()
+    db.refresh(new_club_transaction)
     
     return db_payment
 
@@ -88,12 +128,12 @@ def create_payment_for_debt(
 def generate_monthly_debt(
     request: schemas.DebtGenerationRequest,
     db: Session = Depends(get_db),
-    current_admin: schemas.User = Depends(get_current_admin_user)
+    current_user: schemas.User = Depends(get_current_finance_user)
 ):
     """
     Generates the monthly debt for all active members of a club.
     """
-    db_club = db.query(models.Club).filter(models.Club.id == current_admin.club_id).first()
+    db_club = db.query(models.Club).filter(models.Club.id == current_user.club_id).first()
     if not db_club or db_club.base_fee is None:
         raise HTTPException(status_code=400, detail="La cuota social base no está configurada para el club. Por favor, configúrela primero.")
 
@@ -103,7 +143,7 @@ def generate_monthly_debt(
         raise HTTPException(status_code=400, detail="Formato de mes inválido. Use AAAA-MM.")
 
     members = db.query(models.Member).options(selectinload(models.Member.activities)).filter(
-        models.Member.club_id == current_admin.club_id,
+        models.Member.club_id == current_user.club_id,
         models.Member.is_active == True
     ).all()
 
