@@ -183,6 +183,7 @@ class ClubTransactionBase(BaseModel):
     description: str
     amount: float
     type: CategoryType # Use CategoryType enum for transaction type
+    payment_method: Optional[str] = None
     category_id: Optional[int] = None
     receipt_url: Optional[str] = None
 

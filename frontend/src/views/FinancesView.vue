@@ -88,6 +88,7 @@ const newTransactionForm = ref({
   description: '',
   amount: 0,
   type: 'income',
+  payment_method: 'Efectivo', // Default payment method
   category_id: null,
   receipt: null,
 });
@@ -124,6 +125,7 @@ const handleNewTransactionSubmit = async () => {
   formData.append('description', newTransactionForm.value.description);
   formData.append('amount', newTransactionForm.value.amount);
   formData.append('type', newTransactionForm.value.type);
+  formData.append('payment_method', newTransactionForm.value.payment_method);
   if (newTransactionForm.value.category_id) formData.append('category_id', newTransactionForm.value.category_id);
   if (newTransactionForm.value.receipt) formData.append('receipt', newTransactionForm.value.receipt);
 
@@ -192,6 +194,7 @@ onMounted(() => {
                   <th>Tipo</th>
                   <th>Categoría</th>
                   <th>Descripción</th>
+                  <th>Forma de Pago</th>
                   <th class="text-end">Monto</th>
                   <th>Comprobante</th>
                 </tr>
@@ -202,11 +205,12 @@ onMounted(() => {
                   <td><span :class="transaction.type === 'income' ? 'badge bg-success' : 'badge bg-danger'">{{ getCategoryTypeLabel(transaction.type) }}</span></td>
                   <td>{{ getCategoryName(transaction.category_id) }}</td>
                   <td>{{ transaction.description }}</td>
+                  <td>{{ transaction.payment_method }}</td>
                   <td class="text-end" :class="transaction.type === 'income' ? 'text-success' : 'text-danger'">{{ formatCurrency(transaction.amount) }}</td>
                   <td class="text-center"><a v-if="transaction.receipt_url" :href="transaction.receipt_url" target="_blank">Ver</a><span v-else>-</span></td>
                 </tr>
                 <tr v-if="transactions.length === 0">
-                  <td colspan="6" class="text-center text-muted">No hay transacciones registradas.</td>
+                  <td colspan="7" class="text-center text-muted">No hay transacciones registradas.</td>
                 </tr>
               </tbody>
             </table>
@@ -262,7 +266,10 @@ onMounted(() => {
                 <div class="col-md-4 mb-3"><label for="transaction-type" class="form-label">Tipo</label><select id="transaction-type" class="form-select" v-model="newTransactionForm.type" required><option value="income">Ingreso</option><option value="expense">Gasto</option></select></div>
                 <div class="col-md-4 mb-3"><label for="transaction-category" class="form-label">Categoría</label><select id="transaction-category" class="form-select" v-model="newTransactionForm.category_id"><option :value="null">-- Seleccionar --</option><option v-for="cat in filteredCategories" :key="cat.id" :value="cat.id">{{ cat.name }}</option></select></div>
               </div>
-              <div class="mb-3"><label for="transaction-description" class="form-label">Descripción</label><input type="text" id="transaction-description" class="form-control" v-model="newTransactionForm.description" required /></div>
+              <div class="row">
+                <div class="col-md-6 mb-3"><label for="transaction-description" class="form-label">Descripción</label><input type="text" id="transaction-description" class="form-control" v-model="newTransactionForm.description" required /></div>
+                <div class="col-md-6 mb-3"><label for="payment-method" class="form-label">Forma de Pago</label><select id="payment-method" class="form-select" v-model="newTransactionForm.payment_method" required><option>Efectivo</option><option>Transferencia</option></select></div>
+              </div>
               <div class="row">
                 <div class="col-md-6 mb-3"><label for="transaction-amount" class="form-label">Monto</label><input type="number" step="0.01" id="transaction-amount" class="form-control" v-model="newTransactionForm.amount" required /></div>
                 <div class="col-md-6 mb-3"><label for="transaction-receipt" class="form-label">Comprobante (Opcional)</label><input type="file" id="transaction-receipt" class="form-control" @change="handleReceiptFileChange" accept=".pdf,.jpg,.jpeg,.png" /></div>

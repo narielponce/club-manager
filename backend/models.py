@@ -130,6 +130,7 @@ class ClubTransaction(Base):
     description = Column(String, nullable=False)
     amount = Column(Numeric(10, 2), nullable=False)
     type = Column(SQLAlchemyEnum(CategoryType, name="category_type_enum", values_callable=lambda obj: [e.value for e in obj], native_enum=False), nullable=False)
+    payment_method = Column(String, nullable=True)
     receipt_url = Column(String, nullable=True)
 
     category_id = Column(Integer, ForeignKey("categories.id"), nullable=True)
