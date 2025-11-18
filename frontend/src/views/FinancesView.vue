@@ -22,7 +22,6 @@ const handleDebtSubmit = async () => {
       body: JSON.stringify({ month: selectedMonth.value }),
     })
     debtMessage.value = response.message
-    // Close modal after a delay to show the message
     setTimeout(() => {
       isDebtModalVisible.value = false;
       debtMessage.value = '';
@@ -43,14 +42,13 @@ const transactionsLoading = ref(true);
 const currentPage = ref(1);
 const pageSize = ref(10);
 const totalTransactions = ref(0);
-const accountBalance = ref(0);
+const accountBalance = ref({ total: 0, breakdown: {} });
 
 const totalPages = computed(() => Math.ceil(totalTransactions.value / pageSize.value));
 
 const fetchAccountBalance = async () => {
   try {
-    const response = await apiFetch('/transactions/balance');
-    accountBalance.value = response.balance;
+    accountBalance.value = await apiFetch('/transactions/balance');
   } catch (e) {
     if (e.name !== "SessionExpiredError") {
       console.error("Error fetching account balance:", e.message);
@@ -88,7 +86,7 @@ const newTransactionForm = ref({
   description: '',
   amount: 0,
   type: 'income',
-  payment_method: 'Efectivo', // Default payment method
+  payment_method: 'Efectivo',
   category_id: null,
   receipt: null,
 });
@@ -132,8 +130,8 @@ const handleNewTransactionSubmit = async () => {
   try {
     await apiFetch('/transactions/', { method: 'POST', body: formData });
     newTransactionMessage.value = 'Transacción registrada con éxito.';
-    fetchTransactions(); // Refresh the list
-    fetchAccountBalance(); // Refresh the balance
+    fetchTransactions();
+    fetchAccountBalance();
     setTimeout(() => {
       isTransactionModalVisible.value = false;
       newTransactionMessage.value = '';
@@ -173,14 +171,19 @@ onMounted(() => {
 
     <!-- Transactions List -->
     <div class="card shadow-sm mt-4">
-      <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
         <h3>Historial de Transacciones</h3>
-        <h4 class="mb-0">
-          Saldo: 
-          <span :class="accountBalance >= 0 ? 'text-success' : 'text-danger'">
-            {{ formatCurrency(accountBalance) }}
-          </span>
-        </h4>
+        <div class="text-end">
+          <h4 class="mb-0">
+            Saldo Total: 
+            <span :class="accountBalance.total >= 0 ? 'text-success' : 'text-danger'">
+              {{ formatCurrency(accountBalance.total) }}
+            </span>
+          </h4>
+          <small class="text-muted" v-if="Object.keys(accountBalance.breakdown).length > 0">
+            ({{ Object.entries(accountBalance.breakdown).map(([key, value]) => `${key}: ${formatCurrency(value)}`).join(' - ') }})
+          </small>
+        </div>
       </div>
       <div class="card-body">
         <div v-if="transactionsLoading" class="alert alert-info">Cargando transacciones...</div>
@@ -207,7 +210,7 @@ onMounted(() => {
                   <td>{{ transaction.description }}</td>
                   <td>{{ transaction.payment_method }}</td>
                   <td class="text-end" :class="transaction.type === 'income' ? 'text-success' : 'text-danger'">{{ formatCurrency(transaction.amount) }}</td>
-                  <td class="text-center"><a v-if="transaction.receipt_url" :href="transaction.receipt_url" target="_blank">Ver</a><span v-else>-</span></td>
+                  <td class="text-center"><a v-if="transaction.receipt_url" :href="`/${transaction.receipt_url}`" target="_blank">Ver</a><span v-else>-</span></td>
                 </tr>
                 <tr v-if="transactions.length === 0">
                   <td colspan="7" class="text-center text-muted">No hay transacciones registradas.</td>

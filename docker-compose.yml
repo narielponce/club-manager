@@ -37,7 +37,7 @@ services:
       dockerfile: Dockerfile.backend
     container_name: club_manager_backend
     volumes:
-      - uploads_data:/code/backend/uploads
+      - ./uploads:/code/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -61,4 +61,3 @@ services:
 
 volumes:
   postgres_data:
-  uploads_data:

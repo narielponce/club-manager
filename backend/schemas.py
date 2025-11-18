@@ -52,6 +52,8 @@ class MemberPage(BaseModel):
 class PaymentBase(BaseModel):
     amount: float
     payment_date: date
+    payment_method: Optional[str] = None
+    receipt_url: Optional[str] = None
 
 class PaymentCreate(PaymentBase):
     pass
@@ -206,4 +208,5 @@ class ClubTransactionPage(BaseModel):
     total: int
 
 class Balance(BaseModel):
-    balance: float
+    total: float
+    breakdown: dict[str, float]

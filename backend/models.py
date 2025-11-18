@@ -80,15 +80,25 @@ class Member(Base):
     debts = relationship("Debt", back_populates="member", cascade="all, delete-orphan")
 
 class Payment(Base):
+
     __tablename__ = "payments"
 
+
+
     id = Column(Integer, primary_key=True, index=True)
+
     amount = Column(Numeric(10, 2), nullable=False)
+
     payment_date = Column(Date, nullable=False)
+
+    payment_method = Column(String, nullable=True)
+
     receipt_url = Column(String, nullable=True)
 
 
+
     debt_id = Column(Integer, ForeignKey("debts.id"), nullable=False)
+
     debt = relationship("Debt", back_populates="payments")
 
 class Debt(Base):

@@ -1,11 +1,10 @@
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, watch } from 'vue';
 import { apiFetch } from '../services/api.js';
 
 const props = defineProps({
   show: Boolean,
   debtId: Number,
-  // Optional: pass remaining amount to pre-fill the form
   remainingAmount: {
     type: Number,
     default: 0
@@ -17,10 +16,27 @@ const emit = defineEmits(['close', 'payment-imputed']);
 const form = reactive({
   amount: props.remainingAmount,
   payment_date: new Date().toISOString().slice(0, 10),
+  payment_method: 'Efectivo', // Default value
   receipt: null,
 });
 const error = ref(null);
 const isLoading = ref(false);
+
+// Watch for changes in the prop to update the form when the modal is reopened
+watch(() => props.remainingAmount, (newVal) => {
+  form.amount = newVal;
+});
+watch(() => props.show, (newVal) => {
+  if (newVal) {
+    // Reset form when modal opens
+    form.amount = props.remainingAmount;
+    form.payment_date = new Date().toISOString().slice(0, 10);
+    form.payment_method = 'Efectivo';
+    form.receipt = null;
+    error.value = null;
+  }
+});
+
 
 const handleFileChange = (event) => {
   form.receipt = event.target.files[0];
@@ -39,6 +55,7 @@ const handleSubmit = async () => {
   const formData = new FormData();
   formData.append('amount', form.amount);
   formData.append('payment_date', form.payment_date);
+  formData.append('payment_method', form.payment_method);
   if (form.receipt) {
     formData.append('receipt', form.receipt);
   }
@@ -57,7 +74,8 @@ const handleSubmit = async () => {
         } finally {
           isLoading.value = false;
         }
-      };</script>
+      };
+</script>
 
 <template>
   <div class="modal fade" :class="{ 'show': show, 'd-block': show }" tabindex="-1" role="dialog">
@@ -76,6 +94,13 @@ const handleSubmit = async () => {
             <div class="mb-3">
               <label for="payment-date" class="form-label">Fecha de Pago</label>
               <input type="date" id="payment-date" class="form-control" v-model="form.payment_date" required />
+            </div>
+            <div class="mb-3">
+              <label for="payment-method" class="form-label">Forma de Pago</label>
+              <select id="payment-method" class="form-select" v-model="form.payment_method" required>
+                <option>Efectivo</option>
+                <option>Transferencia</option>
+              </select>
             </div>
             <div class="mb-3">
               <label for="payment-receipt" class="form-label">Comprobante (Opcional)</label>

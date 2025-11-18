@@ -112,18 +112,37 @@ def get_club_balance(
     current_user: models.User = Depends(get_current_finance_user)
 ):
     """
-    Calculate and return the total balance for the current user's club.
+    Calculate and return the total balance for the current user's club,
+    including a breakdown by payment method.
     """
-    total_income = db.query(func.sum(models.ClubTransaction.amount)).filter(
-        models.ClubTransaction.club_id == current_user.club_id,
-        models.ClubTransaction.type == 'income'
-    ).scalar() or 0.0
+    # Query to get sum of amounts grouped by type and payment_method
+    results = db.query(
+        models.ClubTransaction.type,
+        models.ClubTransaction.payment_method,
+        func.sum(models.ClubTransaction.amount)
+    ).filter(
+        models.ClubTransaction.club_id == current_user.club_id
+    ).group_by(
+        models.ClubTransaction.type,
+        models.ClubTransaction.payment_method
+    ).all()
 
-    total_expense = db.query(func.sum(models.ClubTransaction.amount)).filter(
-        models.ClubTransaction.club_id == current_user.club_id,
-        models.ClubTransaction.type == 'expense'
-    ).scalar() or 0.0
-
-    balance = float(total_income) - float(total_expense)
+    breakdown = {}
     
-    return {"balance": balance}
+    for type, payment_method, total_amount in results:
+        # Use a default name if payment_method is None
+        method_name = payment_method or "No Especificado"
+        
+        if method_name not in breakdown:
+            breakdown[method_name] = 0.0
+        
+        amount = float(total_amount)
+        if type == models.CategoryType.INCOME:
+            breakdown[method_name] += amount
+        else: # expense
+            breakdown[method_name] -= amount
+            
+    # Calculate the grand total from the breakdown
+    total_balance = sum(breakdown.values())
+    
+    return {"total": total_balance, "breakdown": breakdown}

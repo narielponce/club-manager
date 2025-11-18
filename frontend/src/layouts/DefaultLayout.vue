@@ -3,7 +3,7 @@
     <!-- Vertical Sidebar (Visible on large screens) -->
     <div class="sidebar bg-dark text-white vh-100 p-3 d-none d-lg-flex flex-column">
       <div class="text-center">
-        <img src="data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23495057'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='24' font-family='sans-serif' dy='.1em'%3ECM%3C/text%3E%3C/svg%3E" alt="Logo" class="mb-3">
+        <img :src="logoSrc" alt="Logo" class="mb-3" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover;">
         <div v-if="currentUser" class="text-white text-truncate">
           <span v-if="currentUser.role === 'superadmin'" title="Panel de Superadministrador">
             Panel Superadmin
@@ -125,6 +125,15 @@ import { computed } from 'vue'
 import { logout } from '../services/auth.js'
 import { currentUser } from '../services/user.js'
 import { RouterLink } from 'vue-router'
+
+const defaultLogo = "data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23495057'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='24' font-family='sans-serif' dy='.1em'%3ECM%3C/text%3E%3C/svg%3E";
+
+const logoSrc = computed(() => {
+  if (currentUser.value?.club?.logo_url) {
+    return `/${currentUser.value.club.logo_url}`;
+  }
+  return defaultLogo;
+});
 
 const isAdmin = computed(() => currentUser.value?.role === 'admin')
 const canViewMembers = computed(() => {

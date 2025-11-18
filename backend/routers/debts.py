@@ -19,6 +19,7 @@ def create_payment_for_debt(
     debt_id: int,
     payment_date: str = Form(...),
     amount: float = Form(...),
+    payment_method: Optional[str] = Form(None),
     receipt: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_user)
@@ -62,6 +63,7 @@ def create_payment_for_debt(
     db_payment = models.Payment(
         amount=payment_amount,
         payment_date=parsed_payment_date,
+        payment_method=payment_method,
         debt_id=debt_id,
         receipt_url=receipt_url
     )
@@ -113,6 +115,7 @@ def create_payment_for_debt(
         description=description,
         amount=payment_amount,
         type=models.CategoryType.INCOME,
+        payment_method=payment_method,
         category_id=payment_category.id,
         receipt_url=receipt_url,
         user_id=current_user.id,

@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 import os
 from contextlib import asynccontextmanager
 import locale # Added this import
@@ -7,6 +8,7 @@ import locale # Added this import
 from . import models, database, security
 from .routers import members, auth, users, activities, debts, club, superadmin, categories, transactions
 
+# --- Lifespan Events ---
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Code to run on startup
@@ -51,8 +53,14 @@ async def lifespan(app: FastAPI):
     # Code to run on shutdown
     print("INFO:     Application shutdown.")
 
-
+# --- App Initialization ---
 app = FastAPI(lifespan=lifespan)
+
+# --- Static Files ---
+# Create the uploads directory if it doesn't exist
+# This path needs to be absolute inside the container to avoid ambiguity
+os.makedirs("/code/uploads", exist_ok=True) 
+app.mount("/uploads", StaticFiles(directory="/code/uploads"), name="uploads")
 
 # --- CORS Middleware ---
 origins = [
@@ -67,10 +75,7 @@ app.add_middleware(
     allow_headers=["*", "Authorization"],  # Explicitly allow Authorization
 )
 
-
-
-
-
+# --- API Routers ---
 app.include_router(members.router)
 app.include_router(auth.router)
 app.include_router(users.router)
@@ -81,10 +86,7 @@ app.include_router(superadmin.router)
 app.include_router(categories.router)
 app.include_router(transactions.router)
 
-
+# --- Root Endpoint ---
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Club Manager API"}
-
-
-
