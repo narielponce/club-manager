@@ -32,6 +32,22 @@
             Finanzas
           </router-link>
         </li>
+        <li v-if="canManageFinances" class="nav-item">
+          <a class="nav-link text-white d-flex align-items-center" data-bs-toggle="collapse" href="#reports-submenu" role="button" aria-expanded="false" aria-controls="reports-submenu">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-bar-chart-line-fill me-2" viewBox="0 0 16 16">
+              <path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1V2z"/>
+            </svg>
+            Informes
+          </a>
+          <div class="collapse" id="reports-submenu">
+            <ul class="nav flex-column ms-4">
+              <li class="nav-item">
+                <router-link to="/reports" class="nav-link text-white py-1" active-class="active">Ingresos por Actividad</router-link>
+              </li>
+              <!-- Future report links can be added here -->
+            </ul>
+          </div>
+        </li>
         <li v-if="isAdmin" class="nav-item">
           <router-link to="/activities" class="nav-link text-white d-flex align-items-center" active-class="active">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-calendar-check me-2" viewBox="0 0 16 16">

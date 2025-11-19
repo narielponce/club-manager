@@ -152,6 +152,9 @@ class ClubTransaction(Base):
     club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False)
     club = relationship("Club")
 
+    activity_id = Column(Integer, ForeignKey("activities.id"), nullable=True)
+    activity = relationship("Activity")
+
 class DebtItem(Base):
     __tablename__ = "debt_items"
 
@@ -161,3 +164,6 @@ class DebtItem(Base):
     
     debt_id = Column(Integer, ForeignKey("debts.id"), nullable=False)
     debt = relationship("Debt", back_populates="items")
+
+    activity_id = Column(Integer, ForeignKey("activities.id"), nullable=True)
+    activity = relationship("Activity")

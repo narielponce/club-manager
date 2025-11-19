@@ -121,6 +121,7 @@ class DebtGenerationRequest(BaseModel):
 class DebtItemBase(BaseModel):
     description: str
     amount: float
+    activity_id: Optional[int] = None
 
 class DebtItem(DebtItemBase):
     id: int
@@ -187,6 +188,7 @@ class ClubTransactionBase(BaseModel):
     type: CategoryType # Use CategoryType enum for transaction type
     payment_method: Optional[str] = None
     category_id: Optional[int] = None
+    activity_id: Optional[int] = None
     receipt_url: Optional[str] = None
 
 class ClubTransactionCreate(BaseModel):
@@ -200,6 +202,7 @@ class ClubTransaction(ClubTransactionBase):
     id: int
     user_id: int
     club_id: int
+    activity: Optional[Activity] = None
     class Config:
         from_attributes = True
 

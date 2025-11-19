@@ -38,6 +38,8 @@ services:
     container_name: club_manager_backend
     volumes:
       - ./uploads:/code/uploads
+      - ./backend:/code/backend
+      - ./.env:/code/.env
     depends_on:
       db:
         condition: service_healthy

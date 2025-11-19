@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 import locale # Added this import
 
 from . import models, database, security
-from .routers import members, auth, users, activities, debts, club, superadmin, categories, transactions
+from .routers import members, auth, users, activities, debts, club, superadmin, categories, transactions, reports
 
 # --- Lifespan Events ---
 @asynccontextmanager
@@ -18,36 +18,33 @@ async def lifespan(app: FastAPI):
         locale.setlocale(locale.LC_TIME, 'es_ES.UTF-8')
     except locale.Error:
         print("WARNING: Could not set locale to es_ES.UTF-8. Month names might not be in Spanish.")
+    
+    # The create_all call is now handled by Alembic
+    # models.Base.metadata.create_all(bind=database.engine)
+
+    # Create superadmin on first startup
     db = database.SessionLocal()
-    try:
-        # Create all tables
-        models.Base.metadata.create_all(bind=database.engine)
+    superadmin_email = os.getenv("SUPERADMIN_EMAIL")
+    superadmin_password = os.getenv("SUPERADMIN_PASSWORD")
 
-        # Create superadmin on first startup
-        superadmin_email = os.getenv("SUPERADMIN_EMAIL")
-        superadmin_password = os.getenv("SUPERADMIN_PASSWORD")
-
-        if superadmin_email and superadmin_password:
-            user = db.query(models.User).filter(models.User.email == superadmin_email).first()
-            if not user:
-                hashed_password = security.get_password_hash(superadmin_password)
-                # Superadmin does not belong to a club, so club_id is None
-                superadmin_user = models.User(
-                    email=superadmin_email,
-                    hashed_password=hashed_password,
-                    role="superadmin",
-                    club_id=None  # Superadmin is not tied to any specific club
-                )
-                db.add(superadmin_user)
-                db.commit()
-                print(f"INFO:     Superadmin user '{superadmin_email}' created.")
-            else:
-                print(f"INFO:     Superadmin user '{superadmin_email}' already exists.")
+    if superadmin_email and superadmin_password:
+        user = db.query(models.User).filter(models.User.email == superadmin_email).first()
+        if not user:
+            hashed_password = security.get_password_hash(superadmin_password)
+            superadmin_user = models.User(
+                email=superadmin_email,
+                hashed_password=hashed_password,
+                role="superadmin",
+                club_id=None
+            )
+            db.add(superadmin_user)
+            db.commit()
+            print(f"INFO:     Superadmin user '{superadmin_email}' created.")
         else:
-            print("INFO:     SUPERADMIN_EMAIL or SUPERADMIN_PASSWORD not set. Skipping superadmin creation.")
-
-    finally:
-        db.close()
+            print(f"INFO:     Superadmin user '{superadmin_email}' already exists.")
+    else:
+        print("INFO:     SUPERADMIN_EMAIL or SUPERADMIN_PASSWORD not set. Skipping superadmin creation.")
+    db.close()
     
     yield
     # Code to run on shutdown
@@ -85,6 +82,7 @@ app.include_router(club.router)
 app.include_router(superadmin.router)
 app.include_router(categories.router)
 app.include_router(transactions.router)
+app.include_router(reports.router)
 
 # --- Root Endpoint ---
 @app.get("/")
