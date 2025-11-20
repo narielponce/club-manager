@@ -213,3 +213,25 @@ class ClubTransactionPage(BaseModel):
 class Balance(BaseModel):
     total: float
     breakdown: dict[str, float]
+
+# --- Schemas for Reports ---
+class MonthlyBalanceItem(BaseModel):
+    month: int
+    month_name: str
+    income: float
+    expense: float
+    balance: float
+
+class IncomeVsExpensesReport(BaseModel):
+    items: List[MonthlyBalanceItem]
+    annual_income: float
+    annual_expense: float
+    annual_balance: float
+
+class CategoryTotalItem(BaseModel):
+    category: str
+    total: float
+
+class CategoryDistributionReport(BaseModel):
+    income_by_category: List[CategoryTotalItem]
+    expense_by_category: List[CategoryTotalItem]

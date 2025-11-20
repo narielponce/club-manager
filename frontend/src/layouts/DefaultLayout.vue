@@ -44,7 +44,12 @@
               <li class="nav-item">
                 <router-link to="/reports" class="nav-link text-white py-1" active-class="active">Ingresos por Actividad</router-link>
               </li>
-              <!-- Future report links can be added here -->
+              <li class="nav-item">
+                <router-link to="/reports/income-vs-expenses" class="nav-link text-white py-1" active-class="active">Ingresos vs Gastos</router-link>
+              </li>
+              <li class="nav-item">
+                <router-link to="/reports/category-distribution" class="nav-link text-white py-1" active-class="active">Distribución por Categorías</router-link>
+              </li>
             </ul>
           </div>
         </li>
@@ -113,6 +118,28 @@
               </li>
               <li v-if="isAdmin" class="nav-item d-lg-none">
                 <router-link to="/settings" class="nav-link" active-class="active">Configuración</router-link>
+              </li>
+              <!-- Informes menu for mobile -->
+              <li v-if="canManageFinances" class="nav-item d-lg-none">
+                <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse" href="#reports-submenu-mobile" role="button" aria-expanded="false" aria-controls="reports-submenu-mobile">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-bar-chart-line-fill me-2" viewBox="0 0 16 16">
+                    <path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1V2z"/>
+                  </svg>
+                  Informes
+                </a>
+                <div class="collapse" id="reports-submenu-mobile">
+                  <ul class="nav flex-column ms-4">
+                    <li class="nav-item">
+                      <router-link to="/reports" class="nav-link py-1" active-class="active">Ingresos por Actividad</router-link>
+                    </li>
+                    <li class="nav-item">
+                      <router-link to="/reports/income-vs-expenses" class="nav-link py-1" active-class="active">Ingresos vs Gastos</router-link>
+                    </li>
+                    <li class="nav-item">
+                      <router-link to="/reports/category-distribution" class="nav-link py-1" active-class="active">Distribución por Categorías</router-link>
+                    </li>
+                  </ul>
+                </div>
               </li>
               <li v-if="currentUser" class="nav-item d-lg-none">
                 <a href="#" @click.prevent="logout" class="nav-link">Logout</a>
@@ -194,5 +221,16 @@ const canManageFinances = computed(() => {
 /* Style for router-link */
 .nav-link.active {
   font-weight: bold;
+}
+
+/* Ensure mobile menu scrolls if content overflows */
+#mainNavbarCollapse.collapse:not(.show) {
+    display: none;
+}
+@media (max-width: 991.98px) {
+  #mainNavbarCollapse {
+    overflow-y: auto;
+    max-height: calc(100vh - 100px); /* Adjust based on your topbar height */
+  }
 }
 </style>
