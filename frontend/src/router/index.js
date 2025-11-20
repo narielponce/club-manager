@@ -9,6 +9,7 @@ import CreateClubView from '../views/CreateClubView.vue'
 import SuperadminDashboardView from '../views/SuperadminDashboardView.vue'
 import FinancesView from '../views/FinancesView.vue'
 import ReportsView from '../views/ReportsView.vue'
+import IncomeVsExpensesView from '../views/IncomeVsExpensesView.vue'
 import { token } from '../services/auth.js'
 
 const router = createRouter({
@@ -48,6 +49,18 @@ const router = createRouter({
       path: '/reports',
       name: 'reports',
       component: ReportsView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/reports/income-vs-expenses',
+      name: 'income-vs-expenses',
+      component: IncomeVsExpensesView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/reports/category-distribution',
+      name: 'category-distribution',
+      component: () => import('../views/CategoryDistributionView.vue'),
       meta: { requiresAuth: true }
     },
     {
