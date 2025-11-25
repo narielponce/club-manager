@@ -24,16 +24,20 @@
           <h5 class="mt-4">Usuario Administrador del Club</h5>
           
           <div class="mb-3">
-            <label for="adminEmail" class="form-label">Email del Admin</label>
+            <label for="adminEmail" class="form-label">Email del Admin (Usuario)</label>
             <input type="email" id="adminEmail" class="form-control" v-model="adminEmail" required>
           </div>
           
           <div class="mb-3">
-            <label for="adminPassword" class="form-label">Password del Admin</label>
-            <input type="password" id="adminPassword" class="form-control" v-model="adminPassword" required>
+            <label for="recoveryEmail" class="form-label">Email de Recuperación (Real)</label>
+            <input type="email" id="recoveryEmail" class="form-control" v-model="recoveryEmail" required>
+            <div class="form-text">Este email se usará para recuperar la contraseña del admin.</div>
           </div>
           
-          <button type="submit" class="btn btn-primary">Crear Club y Admin</button>
+          <button type="submit" class="btn btn-primary" :disabled="loading">
+            <span v-if="loading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            Crear Club y Admin
+          </button>
         </form>
       </div>
     </div>
@@ -43,14 +47,15 @@
 <script setup>
 import { ref } from 'vue';
 import { RouterLink } from 'vue-router';
-import { createClub } from '../services/superadmin.js';
+import { apiFetch } from '../services/api'; // Changed from createClub in superadmin.js
 
 const clubName = ref('');
 const adminEmail = ref('');
-const adminPassword = ref('');
+const recoveryEmail = ref(''); // Added
 const logoFile = ref(null);
 const error = ref(null);
 const success = ref(null);
+const loading = ref(false); // Added for button state
 
 const handleFileChange = (event) => {
   logoFile.value = event.target.files[0];
@@ -59,29 +64,38 @@ const handleFileChange = (event) => {
 const handleCreateClub = async () => {
   error.value = null;
   success.value = null;
+  loading.value = true; // Set loading to true
   try {
     const formData = new FormData();
     formData.append('club_name', clubName.value);
     formData.append('email', adminEmail.value);
-    formData.append('password', adminPassword.value);
+    formData.append('recovery_email', recoveryEmail.value); // Added recovery_email
     if (logoFile.value) {
       formData.append('logo', logoFile.value);
     }
 
-    const newUser = await createClub(formData);
-    success.value = `¡Club '${clubName.value}' y admin '${newUser.email}' creados con éxito!`;
+    // Direct call to the users endpoint, as discovered
+    const response = await apiFetch('/users/', {
+      method: 'POST',
+      body: formData, // FormData is automatically set with Content-Type: multipart/form-data
+    });
+    
+    // API now returns ClubCreationResponse
+    success.value = `¡Club '${response.club.name}' y admin '${response.admin_user.email}' creados con éxito!
+                     Contraseña temporal: ${response.temporary_password}`;
     
     // Clear form
     clubName.value = '';
     adminEmail.value = '';
-    adminPassword.value = '';
+    recoveryEmail.value = ''; // Clear recovery email
     logoFile.value = null;
-    // Reset file input visually
-    document.getElementById('logo').value = '';
+    document.getElementById('logo').value = ''; // Reset file input visually
 
   } catch (err) {
+    console.error('Error al crear el club:', err);
     error.value = err.message || 'Ocurrió un error al crear el club.';
-    console.error(err);
+  } finally {
+    loading.value = false; // Set loading to false
   }
 };
 </script>

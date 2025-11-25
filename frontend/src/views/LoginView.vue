@@ -1,7 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { login } from '../services/auth.js'
+import { login, fetchCurrentUser } from '../services/auth.js'
 import { showSessionModal } from '../services/session.js'
 
 const email = ref('')
@@ -10,8 +10,13 @@ const router = useRouter()
 
 const handleSubmit = async () => {
   try {
-    await login(email.value, password.value)
-    router.push('/') // Redirect to dashboard on success
+    const response = await login(email.value, password.value) // login now returns the full response
+    await fetchCurrentUser() // Fetch user data after setting the token
+    if (response && response.force_password_change) {
+      router.push('/force-change-password') // Redirect to force change password page
+    } else {
+      router.push('/') // Redirect to dashboard on success
+    }
   } catch (err) {
     // Show a modal on login failure
     showSessionModal(
@@ -50,8 +55,9 @@ const handleSubmit = async () => {
             required
           />
         </div>
-        <div class="d-grid">
+        <div class="d-grid gap-2">
           <button type="submit" class="btn btn-primary">Login</button>
+          <RouterLink to="/request-password-reset" class="btn btn-link">¿Olvidaste tu contraseña?</RouterLink>
         </div>
       </form>
     </div>

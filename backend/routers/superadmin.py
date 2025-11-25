@@ -63,3 +63,40 @@ def deactivate_club_by_superadmin(
     db.add(db_club)
     db.commit()
     return
+
+@router.get("/clubs/{club_id}/users", response_model=List[schemas.User])
+def get_users_for_club_by_superadmin(
+    club_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Get all users for a specific club by ID.
+    """
+    db_club = db.query(models.Club).filter(models.Club.id == club_id).first()
+    if not db_club:
+        raise HTTPException(status_code=404, detail="Club not found")
+    
+    return db.query(models.User).filter(models.User.club_id == club_id).all()
+
+@router.put("/users/{user_id}", response_model=schemas.User)
+def update_user_by_superadmin(
+    user_id: int,
+    user_in: schemas.SuperadminUserUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Allows a superadmin to update any user's details.
+    """
+    db_user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    update_data = user_in.model_dump(exclude_unset=True)
+
+    for key, value in update_data.items():
+        setattr(db_user, key, value)
+    
+    db.add(db_user)
+    db.commit()
+    db.refresh(db_user)
+    return db_user
