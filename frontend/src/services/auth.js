@@ -30,7 +30,8 @@ export async function login(email, password) {
   localStorage.setItem('token', data.access_token)
   token.value = data.access_token
 
-  await fetchCurrentUser()
+  // fetchCurrentUser() will now be called by the app's main logic
+  // after checking the force_password_change flag from the login response.
 
   return data
 }

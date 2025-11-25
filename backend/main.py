@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 import locale # Added this import
 
 from . import models, database, security
-from .routers import members, auth, users, activities, debts, club, superadmin, categories, transactions, reports
+from .routers import members, auth, users, activities, debts, club, superadmin, categories, transactions, reports, account
 
 # --- Lifespan Events ---
 @asynccontextmanager
@@ -35,13 +35,20 @@ async def lifespan(app: FastAPI):
                 email=superadmin_email,
                 hashed_password=hashed_password,
                 role="superadmin",
-                club_id=None
+                club_id=None,
+                force_password_change=False # Explicitly set on creation
             )
             db.add(superadmin_user)
             db.commit()
             print(f"INFO:     Superadmin user '{superadmin_email}' created.")
         else:
             print(f"INFO:     Superadmin user '{superadmin_email}' already exists.")
+            # Data correction for existing superadmin from older versions
+            if user.force_password_change is None:
+                print("INFO:     Updating existing superadmin with force_password_change=False.")
+                user.force_password_change = False
+                db.add(user)
+                db.commit()
     else:
         print("INFO:     SUPERADMIN_EMAIL or SUPERADMIN_PASSWORD not set. Skipping superadmin creation.")
     db.close()
@@ -51,7 +58,7 @@ async def lifespan(app: FastAPI):
     print("INFO:     Application shutdown.")
 
 # --- App Initialization ---
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, root_path="/api")
 
 # --- Static Files ---
 # Create the uploads directory if it doesn't exist
@@ -83,6 +90,7 @@ app.include_router(superadmin.router)
 app.include_router(categories.router)
 app.include_router(transactions.router)
 app.include_router(reports.router)
+app.include_router(account.router) # Added
 
 # --- Root Endpoint ---
 @app.get("/")

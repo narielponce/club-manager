@@ -10,6 +10,9 @@ import SuperadminDashboardView from '../views/SuperadminDashboardView.vue'
 import FinancesView from '../views/FinancesView.vue'
 import ReportsView from '../views/ReportsView.vue'
 import IncomeVsExpensesView from '../views/IncomeVsExpensesView.vue'
+import ForceChangePasswordView from '../views/ForceChangePasswordView.vue' // Added
+import RequestPasswordResetView from '../views/RequestPasswordResetView.vue' // Added
+import ResetPasswordView from '../views/ResetPasswordView.vue' // Added
 import { token } from '../services/auth.js'
 
 const router = createRouter({
@@ -67,6 +70,24 @@ const router = createRouter({
       path: '/login',
       name: 'login',
       component: LoginView,
+      meta: { layout: 'LoginLayout' }
+    },
+    {
+      path: '/force-change-password',
+      name: 'force-change-password',
+      component: ForceChangePasswordView,
+      meta: { layout: 'LoginLayout' }
+    },
+    {
+      path: '/request-password-reset',
+      name: 'request-password-reset',
+      component: RequestPasswordResetView,
+      meta: { layout: 'LoginLayout' }
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: ResetPasswordView,
       meta: { layout: 'LoginLayout' }
     },
     // Superadmin Routes

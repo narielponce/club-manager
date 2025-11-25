@@ -1,4 +1,6 @@
 import os
+import secrets
+import string
 from datetime import datetime, timedelta, timezone
 from typing import Optional, List
 from jose import JWTError, jwt
@@ -22,6 +24,16 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
+
+# --- Random String and Token Generation ---
+def create_random_string(length: int = 16) -> str:
+    """Generates a random string of a given length for temporary passwords."""
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+def create_reset_token(length: int = 32) -> str:
+    """Generates a secure, URL-safe random token for password resets."""
+    return secrets.token_urlsafe(length)
 
 # --- JWT Token Creation ---
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):

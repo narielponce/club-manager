@@ -1,6 +1,6 @@
 import enum
 from sqlalchemy import (
-    Boolean, Column, ForeignKey, Integer, String, Enum as SQLAlchemyEnum, Date, Numeric, Table, Float
+    Boolean, Column, ForeignKey, Integer, String, Enum as SQLAlchemyEnum, Date, Numeric, Table, Float, DateTime
 )
 from sqlalchemy.orm import relationship
 
@@ -39,6 +39,12 @@ class User(Base):
 
     club_id = Column(Integer, ForeignKey("clubs.id"), nullable=True)
     club = relationship("Club", back_populates="users")
+
+    # New fields for password recovery and forced change
+    recovery_email = Column(String, nullable=True)
+    force_password_change = Column(Boolean, default=False)
+    password_reset_token = Column(String, nullable=True)
+    password_reset_expires = Column(DateTime, nullable=True)
 
 class Activity(Base):
     __tablename__ = "activities"

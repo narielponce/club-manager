@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form, BackgroundTasks
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import uuid
@@ -6,18 +6,20 @@ import os
 
 from .. import models, schemas, security
 from ..database import get_db
-from ..security import get_current_user, get_current_admin_user, get_password_hash
+from ..security import get_current_user, get_current_admin_user, get_password_hash, create_random_string # Added create_random_string
+from ..email_service import send_email_async # Added
 
 router = APIRouter()
 
-@router.post("/users/", response_model=schemas.User)
+@router.post("/users/", response_model=schemas.ClubCreationResponse) # Changed response_model
 async def create_user(
     club_name: str = Form(...),
     email: str = Form(...),
-    password: str = Form(...),
+    recovery_email: str = Form(...), # Changed from password to recovery_email
     logo: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_superadmin_user)
+    current_user: models.User = Depends(security.get_current_superadmin_user),
+    background_tasks: BackgroundTasks = None # Added BackgroundTasks
 ):
     # --- DEBUG PRINTS ---
     print(f"--- DEBUG: Received request to create club '{club_name}'.")
@@ -28,17 +30,23 @@ async def create_user(
 
     # Basic email validation
     if '@' not in email or len(email.split('@')[1]) == 0:
-        raise HTTPException(status_code=400, detail="Invalid email format")
+        raise HTTPException(status_code=400, detail="Invalid email format for primary email")
+    if '@' not in recovery_email or len(recovery_email.split('@')[1]) == 0:
+        raise HTTPException(status_code=400, detail="Invalid email format for recovery email")
 
-    db_user = db.query(models.User).filter(models.User.email == email).first()
-    if db_user:
-        raise HTTPException(status_code=400, detail="Email already registered")
+    # Check if primary email is already registered with an ACTIVE club
+    existing_user_by_email = db.query(models.User).join(models.Club).filter(
+        models.User.email == email,
+        models.Club.is_active == True
+    ).first()
+    if existing_user_by_email:
+        raise HTTPException(status_code=400, detail="Primary email already registered with an active club")
 
-    # Extract domain and check if a club with a similar name exists
+    # Extract domain and check if an ACTIVE club with a similar name exists
     email_domain = email.split('@')[1]
-    db_club = db.query(models.Club).filter(models.Club.name == club_name).first()
+    db_club = db.query(models.Club).filter(models.Club.name == club_name, models.Club.is_active == True).first()
     if db_club:
-        raise HTTPException(status_code=400, detail="Club name already registered")
+        raise HTTPException(status_code=400, detail="An active club with this name already exists.")
 
     logo_url = None
     if logo:
@@ -76,18 +84,29 @@ async def create_user(
     db.commit()
     db.refresh(new_club)
 
+    # Generate temporary password
+    temporary_password = create_random_string()
+    hashed_password = get_password_hash(temporary_password)
+    
     # Create the admin user for the new club
-    hashed_password = get_password_hash(password)
     new_user = models.User(
         email=email,
         hashed_password=hashed_password,
         club_id=new_club.id,
-        role="admin"  # Assign 'admin' role
+        role="admin",  # Assign 'admin' role
+        recovery_email=recovery_email, # Added recovery email
+        force_password_change=True # Added force password change flag
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
-    return new_user
+
+    # Return ClubCreationResponse
+    return schemas.ClubCreationResponse(
+        club=new_club,
+        admin_user=new_user,
+        temporary_password=temporary_password
+    )
 
 @router.get("/users/me", response_model=schemas.User)
 async def read_users_me(current_user: schemas.User = Depends(get_current_user)):
@@ -131,7 +150,8 @@ def create_user_by_admin(user_in: schemas.UserCreateByAdmin, db: Session = Depen
         email=full_email,
         hashed_password=hashed_password,
         role=user_in.role,
-        club_id=current_admin.club_id
+        club_id=current_admin.club_id,
+        recovery_email=user_in.recovery_email # Save the recovery email
     )
     db.add(new_user)
     db.commit()
