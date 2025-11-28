@@ -6,7 +6,8 @@ import os # For frontend URL from environment
 from .. import models, schemas, security
 from ..database import get_db
 from ..security import get_current_user, verify_password, get_password_hash, create_reset_token
-from ..email_service import send_email_async # Import the async email sender
+# from ..email_service import send_email_async # Import the async email sender
+from ..email_service import email_service
 
 router = APIRouter(
     prefix="/account",
@@ -104,7 +105,8 @@ Este enlace es válido por 1 hora. Si no solicitaste este cambio, por favor igno
 Saludos,
 El equipo de Club Manager
 """
-    await send_email_async(
+#    await send_email_async(
+    await email_service.send_email_async(
         recipients=[user.recovery_email],
         subject=subject,
         body=body,

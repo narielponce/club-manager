@@ -7,7 +7,8 @@ import os
 from .. import models, schemas, security
 from ..database import get_db
 from ..security import get_current_user, get_current_admin_user, get_password_hash, create_random_string # Added create_random_string
-from ..email_service import send_email_async # Added
+# from ..email_service import send_email_async # Added
+from ..email_service import email_service
 
 router = APIRouter()
 
