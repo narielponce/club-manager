@@ -7,6 +7,9 @@
 <style scoped>
 .login-layout {
   min-height: 100vh;
-  background-color: #f8f9fa; /* A light grey background */
+  background-image: url('/fondo-login.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 </style>

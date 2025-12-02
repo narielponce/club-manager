@@ -29,7 +29,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="card shadow-sm" style="width: 100%; max-width: 420px;">
+  <div class="card shadow-sm login-card" style="width: 100%; max-width: 420px;">
     <div class="card-header text-center">
       <h2>Iniciar Sesión</h2>
     </div>
@@ -65,6 +65,13 @@ const handleSubmit = async () => {
 </template>
 
 <style scoped>
+.login-card {
+  background-color: rgba(255, 255, 255, 0.5); /* Semi-transparent white with more transparency */
+  border-radius: 10px; /* Soften the corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Subtle shadow, enhancing existing shadow-sm if present */
+  backdrop-filter: blur(1px); /* Optional: add a blur effect behind the card */
+}
+
 /* The layout for the login page should not include the main dashboard sidebar */
 /* We might need to adjust App.vue to conditionally render the layout */
 </style>
