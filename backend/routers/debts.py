@@ -25,9 +25,8 @@ def create_payment_for_debt(
     current_user: models.User = Depends(get_current_user)
 ):
     """
-    Create a payment for a specific debt with a variable amount, upload an optional receipt,
-    and update the debt's 'is_paid' status based on the total payments.
-    Also creates a corresponding income transaction for the club.
+    Create a payment for a specific debt, correctly allocating the payment across
+    debt items and creating corresponding, correctly categorized club transactions.
     """
     db_debt = db.query(models.Debt).options(selectinload(models.Debt.payments)).join(models.Member).filter(
         models.Debt.id == debt_id,
@@ -46,20 +45,22 @@ def create_payment_for_debt(
     if payment_amount <= 0:
         raise HTTPException(status_code=400, detail="Payment amount must be positive.")
 
+    # --- Calculate amounts paid before this new payment ---
+    total_previously_paid = sum(p.amount for p in db_debt.payments)
+
+    # --- Handle Receipt Upload ---
     receipt_url = None
     if receipt:
         upload_dir = "uploads/receipts"
         os.makedirs(upload_dir, exist_ok=True)
-        
         file_extension = receipt.filename.split(".")[-1]
         unique_filename = f"{uuid.uuid4()}.{file_extension}"
         file_location = os.path.join(upload_dir, unique_filename)
-        
         with open(file_location, "wb+") as file_object:
             file_object.write(receipt.file.read())
         receipt_url = file_location
 
-    # Create and save the new payment
+    # --- Create and Save the Payment ---
     db_payment = models.Payment(
         amount=payment_amount,
         payment_date=parsed_payment_date,
@@ -71,112 +72,89 @@ def create_payment_for_debt(
     db.commit()
     db.refresh(db_payment)
 
-    # Now, update the debt status
-    # We need to reload the debt to get the new payment in the relationship
+    # --- Update Debt Paid Status ---
     db.refresh(db_debt)
-    
-    total_paid = sum(p.amount for p in db_debt.payments)
-    
-    if total_paid >= db_debt.total_amount:
-        db_debt.is_paid = True
-    else:
-        db_debt.is_paid = False
-    
+    total_paid_after_current = sum(p.amount for p in db_debt.payments)
+    db_debt.is_paid = total_paid_after_current >= db_debt.total_amount
     db.add(db_debt)
-    db.commit()
 
-    # --- Create corresponding ClubTransaction(s) for the payment (NEW LOGIC) ---
+    # --- Payment Allocation and Club Transaction Creation ---
     db_member = db.query(models.Member).filter(models.Member.id == db_debt.member_id).first()
+    sorted_items = sorted(db_debt.items, key=lambda x: x.activity_id is not None)
     
-    # We need the debt with its items to distribute the payment
-    db_debt_with_items = db.query(models.Debt).options(selectinload(models.Debt.items)).filter(models.Debt.id == debt_id).first()
+    remaining_current_payment = payment_amount
+    outstanding_debt_tracker = total_previously_paid
 
-    # Get or create the default category for member payments
-    category_name = "Cuota de Socio"
-    payment_category = db.query(models.Category).filter(
-        models.Category.club_id == current_user.club_id,
-        models.Category.name == category_name,
-        models.Category.type == models.CategoryType.INCOME
-    ).first()
-    if not payment_category:
-        payment_category = models.Category(name=category_name, type=models.CategoryType.INCOME, club_id=current_user.club_id)
-        db.add(payment_category)
-        db.commit()
-        db.refresh(payment_category)
-
-    # --- Payment Distribution Logic ---
-    # This logic distributes the payment among the debt items and creates a transaction for each.
-    # For simplicity, we assume a waterfall model: payment covers items in order.
-    # A more complex system might handle partial payments on items differently.
-    
-    remaining_payment = payment_amount
-    
-    # Sort items to ensure base fee is (potentially) paid first.
-    # This is a simple sort, can be made more robust.
-    sorted_items = sorted(db_debt_with_items.items, key=lambda x: x.activity_id is not None)
+    # Get or create categories
+    social_fee_category, activity_income_category = get_or_create_payment_categories(db, current_user.club_id)
 
     for item in sorted_items:
-        if remaining_payment <= 0:
+        if remaining_current_payment <= 0:
             break
 
-        # This logic is simplified: it assumes the payment covers the item.
-        # A real-world scenario might need to handle partial payments per item.
-        # For this refactoring, we will create a transaction for the full item amount
-        # if the payment covers it, which is a common case.
-        # This part can be enhanced later if partial allocation is needed.
+        already_covered = max(Decimal(0), outstanding_debt_tracker)
+        item_outstanding = item.amount - already_covered
         
-        # For now, we create a transaction for each item of the debt, assuming the payment is total.
-        # This is a simplification to get the structure in place.
-        # The correct logic should allocate the `payment_amount` across items.
-        
-        # Let's implement the allocation logic correctly.
-        
-        # Determine how much of the payment to apply to this item
-        # We need to know how much was already paid for this debt item in previous payments,
-        # which our current model doesn't track.
-        # For now, let's stick to a simpler model for Phase 2, and create one transaction
-        # per debt item, assuming the payment is for the full debt.
-        # This is a known limitation we can improve in the future.
-        
-        # Let's try a better approach that works for partial payments.
-        # We need to know the outstanding amount for each item.
-        # This requires a bigger schema change (e.g., `paid_amount` on DebtItem).
-        
-        # --- Final approach for this step (pragmatic) ---
-        # We will create a single transaction for now, but link it to the first activity found.
-        # This is not the final goal, but an incremental step.
-        # NO, the goal is to create multiple transactions. Let's do it.
-        
-        # To do this properly, we need to know what has already been paid for this debt.
-        # Let's query all transactions related to this debt's items. This is getting complex.
-        
-        # Let's reset to a clear, albeit simple, implementation for this phase.
-        # The payment will be broken down into transactions that mirror the debt items.
-        
-        amount_to_allocate = min(remaining_payment, item.amount)
+        if item_outstanding <= 0:
+            outstanding_debt_tracker -= item.amount
+            continue
 
-        member_name = f"{db_member.first_name} {db_member.last_name}" if db_member else ""
-        transaction_description = f"Pago {item.description} - {member_name}".strip()
+        amount_to_allocate = min(remaining_current_payment, item_outstanding)
 
-        new_club_transaction = models.ClubTransaction(
-            transaction_date=parsed_payment_date,
-            description=transaction_description,
-            amount=amount_to_allocate,
-            type=models.CategoryType.INCOME,
-            payment_method=payment_method,
-            category_id=payment_category.id,
-            activity_id=item.activity_id, # This is the key change
-            receipt_url=receipt_url, # Associate the same receipt with all generated transactions
-            user_id=current_user.id,
-            club_id=current_user.club_id
-        )
-        db.add(new_club_transaction)
+        if amount_to_allocate > 0:
+            member_name = f"{db_member.first_name} {db_member.last_name}" if db_member else ""
+            transaction_description = f"Pago {item.description} - {member_name}".strip()
+            
+            # Determine correct category
+            category_id_to_use = social_fee_category.id if item.activity_id is None else activity_income_category.id
+
+            new_club_transaction = models.ClubTransaction(
+                transaction_date=parsed_payment_date,
+                description=transaction_description,
+                amount=amount_to_allocate,
+                type=models.CategoryType.INCOME,
+                payment_method=payment_method,
+                category_id=category_id_to_use,
+                activity_id=item.activity_id,
+                receipt_url=receipt_url,
+                user_id=current_user.id,
+                club_id=current_user.club_id
+            )
+            db.add(new_club_transaction)
+            remaining_current_payment -= amount_to_allocate
         
-        remaining_payment -= amount_to_allocate
+        outstanding_debt_tracker -= item.amount
 
     db.commit()
-    
     return db_payment
+
+def get_or_create_payment_categories(db: Session, club_id: int):
+    """Gets or creates the default categories for social fees and activity income."""
+    # For Social Fee
+    social_fee_category = db.query(models.Category).filter(
+        models.Category.club_id == club_id,
+        models.Category.name == "Cuota de Socio",
+        models.Category.type == models.CategoryType.INCOME
+    ).first()
+    if not social_fee_category:
+        social_fee_category = models.Category(name="Cuota de Socio", type=models.CategoryType.INCOME, club_id=club_id)
+        db.add(social_fee_category)
+        db.commit()
+        db.refresh(social_fee_category)
+
+    # For Activity Income
+    activity_income_category = db.query(models.Category).filter(
+        models.Category.club_id == club_id,
+        models.Category.name == "Ingreso por Actividades",
+        models.Category.type == models.CategoryType.INCOME
+    ).first()
+    if not activity_income_category:
+        activity_income_category = models.Category(name="Ingreso por Actividades", type=models.CategoryType.INCOME, club_id=club_id)
+        db.add(activity_income_category)
+        db.commit()
+        db.refresh(activity_income_category)
+        
+    return social_fee_category, activity_income_category
 
 @router.post("/generate-monthly-debt", status_code=200)
 def generate_monthly_debt(
