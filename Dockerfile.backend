@@ -10,7 +10,7 @@ ENV LANGUAGE es_ES:es
 ENV LC_ALL es_ES.UTF-8
 
 # Create a non-root user and group
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 
 # Set the working directory in the container
 WORKDIR /code
