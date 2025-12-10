@@ -109,7 +109,7 @@ const getCategoryTypeLabel = (type) => {
 <template>
   <div class="card shadow-sm mt-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-      <h3>Gestionar Categorías</h3>
+      <h3>Gestionar Categorías de Gastos / Ingresos</h3>
       <button class="btn btn-primary btn-sm" @click="openAddModal">Nueva Categoría</button>
     </div>
     <div class="card-body">

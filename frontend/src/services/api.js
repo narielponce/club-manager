@@ -1,4 +1,4 @@
-import { token, clearAuthData } from './auth.js';
+import { accessToken, refreshToken, saveTokens, clearAuthData } from './auth.js';
 import { showSessionModal } from './session.js';
 
 // Custom error class for session expiration
@@ -9,38 +9,107 @@ class SessionExpiredError extends Error {
   }
 }
 
-const API_URL = import.meta.env.VITE_API_BASE_URL || '';
+// --- Refresh Logic ---
 
-export async function apiFetch(endpoint, options = {}) {
-  const headers = { ...options.headers };
+let isRefreshing = false;
+let failedQueue = [];
 
-  if (token.value) {
-    headers['Authorization'] = `Bearer ${token.value}`;
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
+async function refreshAuthToken() {
+  if (!refreshToken.value) {
+    return Promise.reject(new Error("No refresh token available"));
   }
 
-  // Do NOT set Content-Type if body is FormData; the browser does it automatically
-  // with the correct boundary.
-  if (!(options.body instanceof FormData)) {
-    headers['Content-Type'] = 'application/json';
-  }
+  try {
+    const response = await fetch(`${API_URL}/token/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken.value }),
+    });
 
-  const config = {
-    ...options,
-    headers,
-  };
+    if (!response.ok) {
+      throw new Error('Failed to refresh token');
+    }
 
-  const response = await fetch(`${API_URL}${endpoint}`, config);
-
-  if (response.status === 401) {
-    // Token is invalid or expired. Clear auth data and show the session modal.
+    const newTokens = await response.json();
+    saveTokens(newTokens.access_token, newTokens.refresh_token);
+    return newTokens.access_token;
+  } catch (error) {
+    console.error("Token refresh failed:", error);
+    // If refresh fails, the session is truly over
     clearAuthData();
     showSessionModal(
       "Sesión Expirada",
       "Tu sesión ha expirado. Por favor, inicia sesión de nuevo.",
       () => { window.location.href = '/login'; }
     );
-    // Throw a specific error type that calling components can ignore
     throw new SessionExpiredError('Session expired. Modal displayed.');
+  }
+}
+
+
+// --- API Fetch Wrapper ---
+
+const API_URL = import.meta.env.VITE_API_BASE_URL || '';
+
+export async function apiFetch(endpoint, options = {}) {
+  // Wait for any ongoing refresh to complete
+  if (isRefreshing) {
+    return new Promise((resolve, reject) => {
+      failedQueue.push({ resolve, reject });
+    })
+    .then(newAccessToken => {
+      const newOptions = { ...options };
+      newOptions.headers = { ...newOptions.headers, 'Authorization': `Bearer ${newAccessToken}` };
+      return apiFetch(endpoint, newOptions); // Retry with new token
+    });
+  }
+
+  const makeRequest = async (token) => {
+    const headers = { ...options.headers };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json';
+    }
+    const config = { ...options, headers };
+    return fetch(`${API_URL}${endpoint}`, config);
+  };
+
+  let response = await makeRequest(accessToken.value);
+
+  if (response.status === 401) {
+    if (isRefreshing) {
+      // If another request is already refreshing, queue this one.
+      return new Promise((resolve, reject) => {
+        failedQueue.push({ resolve, reject });
+      }).then(newAccessToken => {
+        return makeRequest(newAccessToken);
+      });
+    }
+
+    isRefreshing = true;
+    try {
+      const newAccessToken = await refreshAuthToken();
+      processQueue(null, newAccessToken);
+      response = await makeRequest(newAccessToken); // Retry the original request
+    } catch (error) {
+      processQueue(error, null);
+      throw error; // Rethrow session expired error
+    } finally {
+      isRefreshing = false;
+    }
   }
 
   if (!response.ok) {
@@ -49,13 +118,11 @@ export async function apiFetch(endpoint, options = {}) {
     if (typeof errorData.detail === 'string') {
       errorMessage = errorData.detail;
     } else if (typeof errorData.detail === 'object') {
-      // For Pydantic validation errors, which are often a list of objects
       errorMessage = JSON.stringify(errorData.detail, null, 2);
     }
     throw new Error(errorMessage);
   }
 
-  // For DELETE requests with 204 No Content, response.json() will fail
   if (response.status === 204) {
     return null;
   }

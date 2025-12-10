@@ -13,7 +13,7 @@ import IncomeVsExpensesView from '../views/IncomeVsExpensesView.vue'
 import ForceChangePasswordView from '../views/ForceChangePasswordView.vue' // Added
 import RequestPasswordResetView from '../views/RequestPasswordResetView.vue' // Added
 import ResetPasswordView from '../views/ResetPasswordView.vue' // Added
-import { token } from '../services/auth.js'
+import { accessToken } from '../services/auth.js'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -103,7 +103,7 @@ const router = createRouter({
       component: SuperadminDashboardView,
       meta: { requiresAuth: true }, // Use the main app layout
       beforeEnter: (to, from, next) => {
-        if (token.value) {
+        if (accessToken.value) {
           next();
         } else {
           next('/superadmin/login');
@@ -116,7 +116,7 @@ const router = createRouter({
       component: CreateClubView,
       meta: { requiresAuth: true }, // Use the main app layout
       beforeEnter: (to, from, next) => {
-        if (token.value) {
+        if (accessToken.value) {
           next();
         } else {
           next('/superadmin/login');
@@ -127,7 +127,7 @@ const router = createRouter({
 })
 
 router.beforeEach((to, from, next) => {
-  if (to.matched.some(record => record.meta.requiresAuth) && !token.value) {
+  if (to.matched.some(record => record.meta.requiresAuth) && !accessToken.value) {
     next({ name: 'login' })
   } else {
     next()

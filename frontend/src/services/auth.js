@@ -2,60 +2,87 @@ import { ref } from 'vue'
 import { apiFetch } from './api.js'
 import { currentUser } from './user.js'
 import { showSessionModal } from './session.js'
-import { useRouter } from 'vue-router'
+
+// --- Reactive State ---
+
+// Retrieve tokens from localStorage
+const storedTokens = JSON.parse(localStorage.getItem('tokens'));
+
+// Reactive refs for tokens
+export const accessToken = ref(storedTokens?.access_token || null);
+export const refreshToken = ref(storedTokens?.refresh_token || null);
 
 
-// A simple reactive state for the token
-export const token = ref(localStorage.getItem('token'))
+// --- Token Management Functions ---
+
+/**
+ * Saves both tokens to localStorage and updates the reactive refs.
+ * @param {string} newAccessToken
+ * @param {string} newRefreshToken
+ */
+export function saveTokens(newAccessToken, newRefreshToken) {
+  const tokens = {
+    access_token: newAccessToken,
+    refresh_token: newRefreshToken,
+  };
+  localStorage.setItem('tokens', JSON.stringify(tokens));
+  accessToken.value = newAccessToken;
+  refreshToken.value = newRefreshToken;
+}
 
 /**
  * Clears authentication data from storage and state.
  */
 export function clearAuthData() {
-  localStorage.removeItem('token')
-  token.value = null
-  currentUser.value = null
+  localStorage.removeItem('tokens');
+  accessToken.value = null;
+  refreshToken.value = null;
+  currentUser.value = null;
 }
 
+
+// --- Authentication Flow ---
+
 export async function login(email, password) {
-  const formData = new FormData()
-  formData.append('username', email)
-  formData.append('password', password)
+  const formData = new FormData();
+  formData.append('username', email);
+  formData.append('password', password);
 
   const data = await apiFetch('/token', {
     method: 'POST',
     body: formData
-  })
+  });
   
-  localStorage.setItem('token', data.access_token)
-  token.value = data.access_token
+  saveTokens(data.access_token, data.refresh_token);
 
-  // fetchCurrentUser() will now be called by the app's main logic
-  // after checking the force_password_change flag from the login response.
-
-  return data
+  return data;
 }
 
 export function logout() {
-  clearAuthData()
-  showSessionModal(
-    "Sesión Finalizada",
-    "Has cerrado sesión correctamente.",
-    () => {
-      // Use a hard redirect to ensure all state is cleared
-      window.location.href = '/login'
-    }
-  )
+  const wasLoggedIn = !!accessToken.value;
+  clearAuthData();
+
+  if (wasLoggedIn) {
+    showSessionModal(
+      "Sesión Finalizada",
+      "Has cerrado sesión correctamente.",
+      () => {
+        window.location.href = '/login';
+      }
+    );
+  } else {
+    // If not logged in, just redirect
+    window.location.href = '/login';
+  }
 }
 
 export async function fetchCurrentUser() {
-  if (token.value) {
+  if (accessToken.value) {
     try {
-      currentUser.value = await apiFetch('/users/me')
+      currentUser.value = await apiFetch('/users/me');
     } catch (error) {
-      console.error("Failed to fetch user:", error)
-      // This can happen if the token is stale/invalid.
-      // The 401 handler in apiFetch will now handle the UI part of this.
+      console.error("Failed to fetch user:", error);
+      // The 401 handler in apiFetch will now handle the session expiration.
     }
   }
 }
