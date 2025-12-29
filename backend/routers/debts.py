@@ -14,6 +14,50 @@ router = APIRouter(
     tags=["debts"],
 )
 
+@router.post("/debts/manual", response_model=schemas.Debt)
+def create_manual_debt(
+    manual_debt: schemas.ManualDebtCreate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_finance_user)
+):
+    """
+    Creates a manual, one-off debt for a specific member.
+    """
+    # Verify the member belongs to the current user's club
+    db_member = db.query(models.Member).filter(
+        models.Member.id == manual_debt.member_id,
+        models.Member.club_id == current_user.club_id
+    ).first()
+    if not db_member:
+        raise HTTPException(status_code=404, detail="Member not found in this club.")
+
+    debt_amount = Decimal(str(manual_debt.amount))
+    if debt_amount <= 0:
+        raise HTTPException(status_code=400, detail="Charge amount must be positive.")
+
+    # Create the single DebtItem for this manual charge
+    debt_item = models.DebtItem(
+        description=manual_debt.description,
+        amount=debt_amount,
+        activity_id=None
+    )
+    
+    # Create the parent Debt
+    new_debt = models.Debt(
+        month=manual_debt.charge_date.replace(day=1),
+        total_amount=debt_amount,
+        is_paid=False,
+        member_id=manual_debt.member_id,
+        items=[debt_item]
+    )
+    
+    db.add(new_debt)
+    db.commit()
+    db.refresh(new_debt)
+    
+    return new_debt
+
+
 @router.post("/debts/{debt_id}/payments/", response_model=schemas.Payment)
 def create_payment_for_debt(
     debt_id: int,

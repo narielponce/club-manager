@@ -71,6 +71,14 @@ origins = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
+# Add frontend URL from environment variable if set
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    origins.append(frontend_url)
+    # Also add the URL without the port if it specifies 8080, for flexibility
+    if ":8080" in frontend_url:
+        origins.append(frontend_url.replace(":8080", ""))
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,

@@ -185,14 +185,21 @@ def get_member_statement(
 
     # 2. Fetch all debts and associated payments for the member
     debts = db.query(models.Debt).options(
-        selectinload(models.Debt.payments)
+        selectinload(models.Debt.payments),
+        selectinload(models.Debt.items)  # Eager load items
     ).filter(models.Debt.member_id == member_id).all()
 
     # 3. Create a unified list of transactions
     transactions = []
     for debt in debts:
         # Add the debt itself as a transaction
-        concept = f"Deuda de {debt.month.strftime('%B %Y')}"
+        concept = f"Deuda de {debt.month.strftime('%B %Y')}"  # Default concept
+        
+        # If the debt has exactly one item, use that item's description.
+        # This is typical for manual charges or simple social fees.
+        if len(debt.items) == 1:
+            concept = debt.items[0].description
+
         transactions.append({
             "date": debt.month,
             "type": schemas.TransactionType.DEBT,
