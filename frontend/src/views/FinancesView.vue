@@ -1,12 +1,17 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { apiFetch } from '../services/api.js'
-import AddManualChargeModal from '../components/AddManualChargeModal.vue';
+import AddManualChargeModal from '../components/AddManualChargeModal.vue'
 
 // --- Modals State ---
 const isDebtModalVisible = ref(false);
 const isTransactionModalVisible = ref(false);
-const isManualChargeModalVisible = ref(false);
+const showAddManualChargeModal = ref(false);
+
+const handleChargeAdded = () => {
+  fetchTransactions();
+  fetchAccountBalance();
+};
 
 // --- Debt Generation Logic ---
 const selectedMonth = ref(new Date().toISOString().slice(0, 7))
@@ -153,13 +158,6 @@ const formatDate = (dateString) => new Date(dateString).toLocaleDateString('es-E
 const getCategoryTypeLabel = (type) => type === 'income' ? 'Ingreso' : 'Gasto';
 const getCategoryName = (id) => categories.value.find(c => c.id === id)?.name || 'N/A';
 
-// --- Manual Charge Created Handler ---
-const onChargeCreated = () => {
-  // We don't fetch transactions here because a debt is not a transaction yet.
-  // The impact will be visible in the member's account statement.
-  // Optionally, show a success message.
-};
-
 // --- Initial Data Load ---
 onMounted(() => {
   fetchTransactions();
@@ -173,11 +171,18 @@ onMounted(() => {
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1>Finanzas del Club</h1>
       <div>
-        <button class="btn btn-success me-2" @click="isManualChargeModalVisible = true">Crear Cargo Manual</button>
+        <button class="btn btn-success me-2" @click="showAddManualChargeModal = true">Generar Cargo Manual</button>
         <button class="btn btn-primary me-2" @click="isTransactionModalVisible = true">Registrar Transacción</button>
         <button class="btn btn-info" @click="isDebtModalVisible = true">Generar Deuda Mensual</button>
       </div>
     </div>
+
+    <!-- Add Manual Charge Modal -->
+    <AddManualChargeModal 
+      :show="showAddManualChargeModal" 
+      @close="showAddManualChargeModal = false" 
+      @charge-added="handleChargeAdded"
+    />
 
     <!-- Transactions List -->
     <div class="card shadow-sm mt-4">
@@ -300,14 +305,6 @@ onMounted(() => {
         </div>
       </div>
     </div>
-    
-    <!-- Manual Charge Modal -->
-    <AddManualChargeModal 
-      :visible="isManualChargeModalVisible" 
-      @close="isManualChargeModalVisible = false"
-      @charge-created="onChargeCreated"
-    />
-
-    <div v-if="isDebtModalVisible || isTransactionModalVisible || isManualChargeModalVisible" class="modal-backdrop fade show"></div>
+    <div v-if="isDebtModalVisible || isTransactionModalVisible || showAddManualChargeModal" class="modal-backdrop fade show"></div>
   </div>
 </template>

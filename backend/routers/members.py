@@ -33,6 +33,7 @@ def get_all_members(
         search_term = f"%{search}%"
         query = query.filter(
             or_(
+                models.Member.first_name.ilike(search_term),
                 models.Member.last_name.ilike(search_term),
                 models.Member.dni == search
             )

@@ -1,66 +1,59 @@
 <template>
-  <div v-if="visible" class="modal fade show d-block" tabindex="-1">
+  <div class="modal fade" :class="{ 'show': show, 'd-block': show }" id="addManualChargeModal" tabindex="-1"
+    aria-labelledby="addManualChargeModalLabel" aria-hidden="true">
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Crear Cargo Manual</h5>
-          <button type="button" class="btn-close" @click="closeModal"></button>
+          <h5 class="modal-title" id="addManualChargeModalLabel">Generar Cargo Manual</h5>
+          <button type="button" class="btn-close" @click="closeModal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
-          <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
-          <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
-          
-          <form @submit.prevent="handleSubmit">
-            <div class="mb-3 position-relative">
-              <label for="member-search" class="form-label">Buscar Socio</label>
-              <input 
-                v-if="!form.member_id"
-                type="text" 
-                id="member-search" 
-                class="form-control" 
-                v-model="searchQuery" 
-                placeholder="Escribe para buscar por nombre o DNI..."
-                autocomplete="off"
-              />
-              <div v-if="isSearching" class="form-text">Buscando...</div>
-              <ul v-if="searchResults.length > 0" class="list-group mt-1 position-absolute w-100" style="z-index: 1000;">
-                <li 
-                  v-for="member in searchResults" 
-                  :key="member.id" 
-                  class="list-group-item list-group-item-action"
-                  @click="selectMember(member)"
-                >
-                  {{ member.first_name }} {{ member.last_name }} (DNI: {{ member.dni }})
-                </li>
-              </ul>
-              <div v-if="selectedMemberName" class="mt-2 p-2 bg-light border rounded d-flex justify-content-between align-items-center">
-                <span>Socio: <strong>{{ selectedMemberName }}</strong></span>
-                <button type="button" class="btn-close" @click="clearSelectedMember" aria-label="Clear selection"></button>
+          <form @submit.prevent="submitCharge">
+            <!-- Member Search -->
+            <div class="mb-3">
+              <label for="member-search" class="form-label">Socio</label>
+              <div v-if="form.member_id" class="d-flex align-items-center">
+                <input type="text" class="form-control" :value="selectedMemberName" disabled>
+                <button type="button" class="btn btn-outline-secondary ms-2" @click="clearMemberSelection">X</button>
               </div>
+              <div v-else class="position-relative">
+                <input type="text" class="form-control" v-model="searchQuery" @focus="showResults = true"
+                  placeholder="Buscar por nombre, apellido o DNI..." id="member-search">
+                <div v-if="isLoadingSearch" class="spinner-border spinner-border-sm position-absolute end-0 top-50 translate-middle-y me-2" role="status">
+                  <span class="visually-hidden">Buscando...</span>
+                </div>
+                <ul v-if="showResults && searchResults.length > 0" class="list-group position-absolute w-100" style="z-index: 1000;">
+                  <li v-for="member in searchResults" :key="member.id" class="list-group-item list-group-item-action"
+                    @click="selectMember(member)">
+                    {{ member.first_name }} {{ member.last_name }} (DNI: {{ member.dni || 'N/A' }})
+                  </li>
+                </ul>
+              </div>
+               <input type="hidden" :value="form.member_id" required>
             </div>
 
             <div class="mb-3">
-              <label for="charge_date" class="form-label">Fecha del Cargo</label>
-              <input type="date" id="charge_date" class="form-control" v-model="form.charge_date" @input="clearMessages" required />
+              <label for="date" class="form-label">Fecha</label>
+              <input type="date" class="form-control" v-model="form.date" id="date" required>
             </div>
-
-            <div class="mb-3">
-              <label for="amount" class="form-label">Importe</label>
-              <input type="number" step="0.01" id="amount" class="form-control" v-model.number="form.amount" @input="clearMessages" required />
-            </div>
-
             <div class="mb-3">
               <label for="description" class="form-label">Descripción</label>
-              <input type="text" id="description" class="form-control" v-model="form.description" @input="clearMessages" required maxlength="100" />
+              <input type="text" class="form-control" v-model="form.description" id="description" required>
+            </div>
+            <div class="mb-3">
+              <label for="amount" class="form-label">Monto</label>
+              <input type="number" step="0.01" class="form-control" v-model="form.amount" id="amount" required>
+            </div>
+            <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" @click="closeModal">Cancelar</button>
+              <button type="submit" class="btn btn-primary" :disabled="isSubmitting" :class="{'disabled': !form.member_id}">
+                <span v-if="isSubmitting" class="spinner-border spinner-border-sm" role="status"
+                  aria-hidden="true"></span>
+                Guardar Cargo
+              </button>
             </div>
           </form>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" @click="closeModal">Cerrar</button>
-          <button type="button" class="btn btn-primary" @click="handleSubmit" :disabled="isLoading || !form.member_id">
-            <span v-if="isLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            Crear Cargo
-          </button>
         </div>
       </div>
     </div>
@@ -68,121 +61,112 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, defineProps, defineEmits } from 'vue';
+import { ref, watch } from 'vue';
 import { apiFetch } from '../services/api';
 
-const props = defineProps({
-  visible: Boolean
+const props = defineProps({ show: Boolean });
+const emit = defineEmits(['close', 'charge-added']);
+
+// Form state
+const form = ref({
+  member_id: null,
+  date: new Date().toISOString().slice(0, 10),
+  description: '',
+  amount: ''
 });
 
-const emit = defineEmits(['close', 'charge-created']);
-
-// Member Search State
+// Member search state
 const searchQuery = ref('');
 const searchResults = ref([]);
 const selectedMemberName = ref('');
-const isSearching = ref(false);
+const isLoadingSearch = ref(false);
+const showResults = ref(false);
 let debounceTimer = null;
 
-const form = reactive({
-  member_id: '',
-  charge_date: new Date().toISOString().split('T')[0],
-  amount: null,
-  description: ''
-});
-
-const isLoading = ref(false);
+// Modal/Submission state
+const isSubmitting = ref(false);
 const errorMessage = ref('');
-const successMessage = ref('');
 
-function clearMessages() {
-  successMessage.value = '';
-  errorMessage.value = '';
-}
-
-watch(searchQuery, (newQuery) => {
-  searchResults.value = [];
-  clearMessages();
-
-  if (newQuery.length < 2) {
-    isSearching.value = false;
-    clearTimeout(debounceTimer);
-    return;
-  }
-  
-  isSearching.value = true;
+watch(searchQuery, (newValue) => {
   clearTimeout(debounceTimer);
-
-  debounceTimer = setTimeout(async () => {
-    try {
-      const response = await apiFetch(`/members?search=${newQuery}&size=5`);
-      searchResults.value = response.items;
-    } catch (error) {
-      errorMessage.value = 'Error al buscar socios: ' + error.message;
-    } finally {
-      isSearching.value = false;
-    }
-  }, 500); // 500ms debounce
+  if (newValue.length > 1) {
+    debounceTimer = setTimeout(() => {
+      searchMembers(newValue);
+    }, 300);
+  } else {
+    searchResults.value = [];
+  }
 });
 
-function selectMember(member) {
-  form.member_id = member.id;
-  selectedMemberName.value = `${member.first_name} ${member.last_name}`;
-  searchQuery.value = '';
-  searchResults.value = [];
-}
-
-function clearSelectedMember() {
-  form.member_id = '';
-  selectedMemberName.value = '';
-}
-
-function resetForm() {
-  clearSelectedMember();
-  form.charge_date = new Date().toISOString().split('T')[0];
-  form.amount = null;
-  form.description = '';
-  searchQuery.value = '';
-  searchResults.value = [];
-}
-
-async function handleSubmit() {
-  if (!form.member_id) {
-    errorMessage.value = 'Por favor, busca y selecciona un socio.';
-    return;
-  }
-  
-  isLoading.value = true;
-  clearMessages();
-
-  try {
-    await apiFetch('/debts/manual', {
-      method: 'POST',
-      body: JSON.stringify(form)
-    });
-    emit('charge-created');
+watch(() => props.show, (show) => {
+  if (show) {
     resetForm();
-    successMessage.value = '¡Cargo creado con éxito! Puedes crear otro o cerrar la ventana.';
-  } catch (error) {
-    errorMessage.value = 'Error al crear el cargo: ' + error.message;
-  } finally {
-    isLoading.value = false;
   }
-}
+});
 
 function closeModal() {
-  resetForm();
-  clearMessages();
   emit('close');
 }
 
-</script>
+async function searchMembers(query) {
+  isLoadingSearch.value = true;
+  try {
+    const response = await apiFetch(`/members?is_active=true&size=10&search=${query}`);
+    searchResults.value = response.items;
+    showResults.value = true;
+  } catch (error) {
+    errorMessage.value = 'Error al buscar socios.';
+    console.error(error);
+  } finally {
+    isLoadingSearch.value = false;
+  }
+}
 
-<style scoped>
-.modal {
-  background-color: rgba(0, 0, 0, 0.5);
+function selectMember(member) {
+  form.value.member_id = member.id;
+  selectedMemberName.value = `${member.first_name} ${member.last_name}`;
+  searchQuery.value = '';
+  searchResults.value = [];
+  showResults.value = false;
 }
-.list-group-item-action {
-  cursor: pointer;
+
+function clearMemberSelection() {
+    form.value.member_id = null;
+    selectedMemberName.value = '';
+    searchQuery.value = '';
 }
-</style>
+
+function resetForm() {
+    clearMemberSelection();
+    form.value.date = new Date().toISOString().slice(0, 10);
+    form.value.description = '';
+    form.value.amount = '';
+    errorMessage.value = '';
+    isSubmitting.value = false;
+}
+
+async function submitCharge() {
+  if (!form.value.member_id) {
+    errorMessage.value = "Por favor, seleccione un socio.";
+    return;
+  }
+  isSubmitting.value = true;
+  errorMessage.value = '';
+  try {
+    const chargeData = {
+      ...form.value,
+      amount: parseFloat(form.value.amount)
+    };
+    await apiFetch('/debts/manual', {
+      method: 'POST',
+      body: JSON.stringify(chargeData)
+    });
+    emit('charge-added');
+    closeModal();
+  } catch (error) {
+    errorMessage.value = 'Error al crear el cargo. ' + (error.message || 'Error desconocido.');
+  } finally {
+    isSubmitting.value = false;
+  }
+}
+</script>
