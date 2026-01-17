@@ -110,6 +110,9 @@
               <li v-if="canViewMembers" class="nav-item d-lg-none">
                 <router-link to="/" class="nav-link" active-class="active">Socios</router-link>
               </li>
+              <li v-if="canManageFinances" class="nav-item d-lg-none">
+                <router-link to="/finances" class="nav-link" active-class="active">Finanzas</router-link>
+              </li>
               <li v-if="isAdmin" class="nav-item d-lg-none">
                 <router-link to="/activities" class="nav-link" active-class="active">Actividades</router-link>
               </li>

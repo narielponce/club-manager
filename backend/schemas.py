@@ -170,6 +170,12 @@ class Debt(DebtBase):
     class Config:
         from_attributes = True
 
+class ManualChargeCreate(BaseModel):
+    member_id: int
+    date: date
+    description: str
+    amount: float
+
 # --- Schemas for Member Account Statement ---
 class TransactionType(str, enum.Enum):
     DEBT = "debt"
