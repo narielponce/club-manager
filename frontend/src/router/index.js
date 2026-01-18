@@ -10,6 +10,7 @@ import SuperadminDashboardView from '../views/SuperadminDashboardView.vue'
 import FinancesView from '../views/FinancesView.vue'
 import ReportsView from '../views/ReportsView.vue'
 import IncomeVsExpensesView from '../views/IncomeVsExpensesView.vue'
+import ProfessorReportView from '../views/ProfessorReportView.vue'
 import ForceChangePasswordView from '../views/ForceChangePasswordView.vue' // Added
 import RequestPasswordResetView from '../views/RequestPasswordResetView.vue' // Added
 import ResetPasswordView from '../views/ResetPasswordView.vue' // Added
@@ -64,6 +65,12 @@ const router = createRouter({
       path: '/reports/category-distribution',
       name: 'category-distribution',
       component: () => import('../views/CategoryDistributionView.vue'),
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/reports/my-students',
+      name: 'professor-report',
+      component: ProfessorReportView,
       meta: { requiresAuth: true }
     },
     {

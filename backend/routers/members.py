@@ -29,6 +29,12 @@ def get_all_members(
         models.Member.is_active == True
     )
 
+    # If the user is a professor, only show their students
+    if current_user.role == 'profesor':
+        query = query.join(models.Member.activities).filter(
+            models.Activity.profesor_id == current_user.id
+        ).distinct()
+
     if search:
         search_term = f"%{search}%"
         query = query.filter(

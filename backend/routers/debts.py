@@ -275,20 +275,39 @@ def generate_monthly_debt(
 def create_manual_charge(
     charge_data: schemas.ManualChargeCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Creates a manual charge for a member.
-    If a debt for the given month already exists, it adds the charge as a new item.
-    Otherwise, it creates a new debt for the month with the manual charge as its first item.
+    - Admins/Tesoreros can create a charge for any member.
+    - Profesors can only create a charge for a member enrolled in one of their activities.
     """
-    # Verify the member exists and belongs to the user's club
     member = db.query(models.Member).filter(
         models.Member.id == charge_data.member_id,
         models.Member.club_id == current_user.club_id
     ).first()
     if not member:
         raise HTTPException(status_code=404, detail="Member not found")
+
+    # Authorization check
+    if current_user.role not in ['admin', 'tesorero']:
+        if current_user.role == 'profesor':
+            # Check if the member is a student of the professor
+            professor_activities = db.query(models.Activity.id).filter(
+                models.Activity.profesor_id == current_user.id
+            ).all()
+            professor_activity_ids = {activity_id for activity_id, in professor_activities}
+
+            member_activities = {activity.id for activity in member.activities}
+            
+            if not professor_activity_ids.intersection(member_activities):
+                raise HTTPException(
+                    status_code=403,
+                    detail="Not authorized to create a charge for this member. The member is not in any of your activities."
+                )
+        else:
+            # Other roles are not permitted
+            raise HTTPException(status_code=403, detail="Not authorized to perform this action.")
 
     month_date = charge_data.date.replace(day=1)
     charge_amount = Decimal(str(charge_data.amount))

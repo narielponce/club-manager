@@ -56,6 +56,9 @@ class Activity(Base):
     club_id = Column(Integer, ForeignKey("clubs.id"))
     club = relationship("Club", back_populates="activities")
 
+    profesor_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    profesor = relationship("User")
+
     members = relationship(
         "Member",
         secondary=member_activity_association,

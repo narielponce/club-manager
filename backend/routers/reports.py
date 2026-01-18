@@ -1,19 +1,81 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
-from sqlalchemy import func, case, extract
-from typing import Optional
+from sqlalchemy.orm import Session, selectinload
+from sqlalchemy import func, case, extract, distinct
+from typing import Optional, List
 
 from .. import models, schemas
 from ..database import get_db
-from ..security import get_current_finance_user
+from ..security import get_current_finance_user, get_current_user, require_roles
 
 router = APIRouter(
     prefix="/reports",
     tags=["reports"],
-    dependencies=[Depends(get_current_finance_user)],
 )
 
-@router.get("/income-by-activity")
+@router.get("/my-students/account-status", response_model=schemas.ProfessorStudentReport, dependencies=[Depends(require_roles(['profesor']))])
+def get_professor_student_report(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    """
+    For a professor, get a report of the account status of all their students.
+    """
+    # 1. Get all unique student IDs for the current professor
+    student_query = db.query(models.Member.id).join(
+        models.Member.activities
+    ).filter(
+        models.Activity.profesor_id == current_user.id
+    ).distinct()
+    student_ids = [s.id for s in student_query.all()]
+
+    if not student_ids:
+        return schemas.ProfessorStudentReport(students=[])
+
+    # 2. Get all member details for these students
+    students = db.query(models.Member).filter(models.Member.id.in_(student_ids)).all()
+    student_map = {s.id: s for s in students}
+
+    # 3. Get all debts for these students
+    debts = db.query(
+        models.Debt.member_id,
+        func.sum(models.Debt.total_amount).label('total_debt')
+    ).filter(
+        models.Debt.member_id.in_(student_ids)
+    ).group_by(models.Debt.member_id).all()
+    debt_map = {d.member_id: d.total_debt for d in debts}
+
+    # 4. Get all payments for these students
+    payments = db.query(
+        models.Debt.member_id,
+        func.sum(models.Payment.amount).label('total_paid')
+    ).join(
+        models.Payment, models.Debt.id == models.Payment.debt_id
+    ).filter(
+        models.Debt.member_id.in_(student_ids)
+    ).group_by(models.Debt.member_id).all()
+    payment_map = {p.member_id: p.total_paid for p in payments}
+
+    # 5. Build the report
+    report_items = []
+    for student_id in student_ids:
+        total_debt = debt_map.get(student_id, 0.0)
+        total_paid = payment_map.get(student_id, 0.0)
+        balance = float(total_debt) - float(total_paid)
+        
+        student = student_map.get(student_id)
+        if student:
+            report_items.append(schemas.StudentAccountStatus(
+                member_id=student.id,
+                first_name=student.first_name,
+                last_name=student.last_name,
+                dni=student.dni,
+                balance=balance
+            ))
+            
+    return schemas.ProfessorStudentReport(students=report_items)
+
+
+@router.get("/income-by-activity", dependencies=[Depends(get_current_finance_user)])
 def get_income_by_activity(
     year: Optional[int] = None,
     month: Optional[int] = None,
@@ -63,7 +125,7 @@ def get_income_by_activity(
 
     return report
 
-@router.get("/income-vs-expenses/{year}", response_model=schemas.IncomeVsExpensesReport)
+@router.get("/income-vs-expenses/{year}", response_model=schemas.IncomeVsExpensesReport, dependencies=[Depends(get_current_finance_user)])
 def get_income_vs_expenses(
     year: int,
     db: Session = Depends(get_db),
@@ -134,7 +196,7 @@ def get_income_vs_expenses(
         annual_balance=annual_balance
     )
 
-@router.get("/distribution-by-category", response_model=schemas.CategoryDistributionReport)
+@router.get("/distribution-by-category", response_model=schemas.CategoryDistributionReport, dependencies=[Depends(get_current_finance_user)])
 def get_distribution_by_category(
     year: Optional[int] = None,
     month: Optional[int] = None,
