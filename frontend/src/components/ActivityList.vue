@@ -6,6 +6,10 @@ defineProps({
   activities: {
     type: Array,
     required: true
+  },
+  professors: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -21,44 +25,47 @@ const handleDelete = async (activityId) => {
       method: 'DELETE',
     })
     emit('activity-deleted')
-      } catch (error) {
-        if (error.name !== "SessionExpiredError") {
-          alert('Error al eliminar actividad: ' + error.message)
-        }
-      }
+  } catch (error) {
+    if (error.name !== "SessionExpiredError") {
+      alert('Error al eliminar actividad: ' + error.message)
     }
+  }
+}
 
-    // --- Edit Logic ---
-    const editingActivityId = ref(null)
-    const editFormData = reactive({ name: '', monthly_cost: '' })
+// --- Edit Logic ---
+const editingActivityId = ref(null)
+const editFormData = reactive({ name: '', monthly_cost: '', profesor_id: null })
 
-    const startEditing = (activity) => {
-      editingActivityId.value = activity.id
-      editFormData.name = activity.name
-      editFormData.monthly_cost = activity.monthly_cost
+const startEditing = (activity) => {
+  editingActivityId.value = activity.id
+  editFormData.name = activity.name
+  editFormData.monthly_cost = activity.monthly_cost
+  editFormData.profesor_id = activity.profesor?.id || null
+}
+
+const cancelEditing = () => {
+  editingActivityId.value = null
+}
+
+const handleUpdate = async (activityId) => {
+  try {
+    const payload = {
+      name: editFormData.name,
+      monthly_cost: parseFloat(editFormData.monthly_cost),
+      profesor_id: editFormData.profesor_id || null
+    };
+    await apiFetch(`/activities/${activityId}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    })
+    emit('activity-updated')
+    editingActivityId.value = null // Exit editing mode
+  } catch (error) {
+    if (error.name !== "SessionExpiredError") {
+      alert('Error al actualizar actividad: ' + error.message)
     }
-
-    const cancelEditing = () => {
-      editingActivityId.value = null
-    }
-
-    const handleUpdate = async (activityId) => {
-      try {
-        await apiFetch(`/activities/${activityId}`, {
-          method: 'PUT',
-          body: JSON.stringify({
-            name: editFormData.name,
-            monthly_cost: parseFloat(editFormData.monthly_cost)
-          }),
-        })
-        emit('activity-updated')
-        editingActivityId.value = null // Exit editing mode
-      } catch (error) {
-        if (error.name !== "SessionExpiredError") {
-          alert('Error al actualizar actividad: ' + error.message)
-        }
-      }
-    }
+  }
+}
 </script>
 
 <template>
@@ -73,6 +80,7 @@ const handleDelete = async (activityId) => {
             <tr>
               <th scope="col">Nombre</th>
               <th scope="col">Costo Mensual</th>
+              <th scope="col">Profesor Asignado</th>
               <th scope="col" class="text-end">Acciones</th>
             </tr>
           </thead>
@@ -81,6 +89,7 @@ const handleDelete = async (activityId) => {
               <template v-if="editingActivityId !== activity.id">
                 <td>{{ activity.name }}</td>
                 <td>{{ $formatCurrency(activity.monthly_cost) }}</td>
+                <td>{{ activity.profesor?.email || 'Sin asignar' }}</td>
                 <td class="text-end">
                   <button @click="startEditing(activity)" class="btn btn-primary btn-sm me-2">Editar</button>
                   <button @click="handleDelete(activity.id)" class="btn btn-danger btn-sm">Eliminar</button>
@@ -91,7 +100,16 @@ const handleDelete = async (activityId) => {
                   <input type="text" v-model="editFormData.name" class="form-control form-control-sm" />
                 </td>
                 <td>
-                  <input type="number" step="0.01" v-model="editFormData.monthly_cost" class="form-control form-control-sm" />
+                  <input type="number" step="0.01" v-model="editFormData.monthly_cost"
+                    class="form-control form-control-sm" />
+                </td>
+                <td>
+                  <select class="form-select form-select-sm" v-model="editFormData.profesor_id">
+                    <option :value="null">Sin asignar</option>
+                    <option v-for="profesor in professors" :key="profesor.id" :value="profesor.id">
+                      {{ profesor.email }}
+                    </option>
+                  </select>
                 </td>
                 <td class="text-end">
                   <button @click="handleUpdate(activity.id)" class="btn btn-success btn-sm me-2">Guardar</button>
@@ -100,7 +118,7 @@ const handleDelete = async (activityId) => {
               </template>
             </tr>
             <tr v-if="activities.length === 0">
-              <td colspan="3" class="text-center text-muted">No hay actividades creadas.</td>
+              <td colspan="4" class="text-center text-muted">No hay actividades creadas.</td>
             </tr>
           </tbody>
         </table>

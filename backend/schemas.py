@@ -28,6 +28,7 @@ class MemberUpdate(MemberBase):
 class ActivityBase(BaseModel):
     name: str
     monthly_cost: float
+    profesor_id: Optional[int] = None
 
 class ActivityCreate(ActivityBase):
     pass
@@ -35,6 +36,7 @@ class ActivityCreate(ActivityBase):
 class Activity(ActivityBase):
     id: int
     club_id: int
+    profesor: Optional["User"] = None
     class Config:
         from_attributes = True
 
@@ -282,3 +284,13 @@ class CategoryTotalItem(BaseModel):
 class CategoryDistributionReport(BaseModel):
     income_by_category: List[CategoryTotalItem]
     expense_by_category: List[CategoryTotalItem]
+
+class StudentAccountStatus(BaseModel):
+    member_id: int
+    first_name: str
+    last_name: str
+    dni: Optional[str] = None
+    balance: float
+
+class ProfessorStudentReport(BaseModel):
+    students: List[StudentAccountStatus]

@@ -4,13 +4,18 @@ import { apiFetch } from '../services/api.js'
 
 const props = defineProps({
   show: Boolean,
+  professors: {
+    type: Array,
+    default: () => []
+  }
 })
 
 const emit = defineEmits(['close', 'activity-added'])
 
 const newActivity = reactive({
   name: '',
-  monthly_cost: ''
+  monthly_cost: '',
+  profesor_id: null
 })
 
 const message = ref('')
@@ -19,6 +24,7 @@ const error = ref(null)
 const resetForm = () => {
   newActivity.name = ''
   newActivity.monthly_cost = ''
+  newActivity.profesor_id = null
   message.value = ''
   error.value = null
 }
@@ -27,23 +33,26 @@ const handleSubmit = async () => {
   error.value = null
   message.value = ''
   try {
+    // Make sure monthly_cost is a float and profesor_id is null if not selected
+    const payload = {
+      name: newActivity.name,
+      monthly_cost: parseFloat(newActivity.monthly_cost),
+      profesor_id: newActivity.profesor_id || null
+    };
     await apiFetch('/activities/', {
       method: 'POST',
-      body: JSON.stringify({
-        name: newActivity.name,
-        monthly_cost: parseFloat(newActivity.monthly_cost)
-      }),
+      body: JSON.stringify(payload),
     })
     message.value = 'Actividad creada con éxito! Puedes cerrar esta ventana o añadir otra.'
     // Don't reset form fully, just clear the name for quick multi-add
-    newActivity.name = '' 
+    newActivity.name = ''
     emit('activity-added')
-        } catch (e) {
-          if (e.name !== "SessionExpiredError") {
-            error.value = e.message
-          }
-        }
-      }
+  } catch (e) {
+    if (e.name !== "SessionExpiredError") {
+      error.value = e.message
+    }
+  }
+}
 // Reset form when modal is closed
 watch(() => props.show, (newVal) => {
   if (!newVal) {
@@ -70,7 +79,17 @@ watch(() => props.show, (newVal) => {
             </div>
             <div class="mb-3">
               <label for="modal-activity-cost" class="form-label">Costo Mensual</label>
-              <input type="number" step="0.01" id="modal-activity-cost" class="form-control" v-model="newActivity.monthly_cost" required placeholder="0.00" />
+              <input type="number" step="0.01" id="modal-activity-cost" class="form-control"
+                v-model="newActivity.monthly_cost" required placeholder="0.00" />
+            </div>
+            <div class="mb-3">
+              <label for="modal-activity-profesor" class="form-label">Profesor Asignado</label>
+              <select id="modal-activity-profesor" class="form-select" v-model="newActivity.profesor_id">
+                <option :value="null">Sin asignar</option>
+                <option v-for="profesor in professors" :key="profesor.id" :value="profesor.id">
+                  {{ profesor.email }}
+                </option>
+              </select>
             </div>
             <div v-if="message" class="alert alert-success mt-3 py-2">{{ message }}</div>
             <div v-if="error" class="alert alert-danger mt-3 py-2">{{ error }}</div>

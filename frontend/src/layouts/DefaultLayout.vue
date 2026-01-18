@@ -24,7 +24,7 @@
             Socios
           </router-link>
         </li>
-        <li v-if="canManageFinances" class="nav-item">
+        <li v-if="canAccessFinancesView" class="nav-item">
           <router-link to="/finances" class="nav-link text-white d-flex align-items-center" active-class="active">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-currency-dollar me-2" viewBox="0 0 16 16">
               <path d="M4 10.781c.148.14.386.293.74.46.658.307 1.573.629 2.52.876.543.148 1.07.288 1.555.404h.003a8.329 8.329 0 0 1 .584.122 25.157 25.157 0 0 1 .585.122c.22.046.45.085.695.119L12 11.76V10.31a11.275 11.275 0 0 0-.468-.095 23.653 23.653 0 0 0-.612-.124l-.004-.001a12.904 12.904 0 0 0-.585-.123 25.157 25.157 0 0 0-.585-.122c-.22-.046-.45-.085-.695-.119L4 10.31v.471zm0-1.766V7.403c.46-.084.95-.171 1.446-.272l.004-.001c.27-.057.54-.11.81-.162.269-.053.539-.103.809-.149.23-.04.45-.073.67-.101L12 6.35V4.905a11.275 11.275 0 0 0-.468-.095 23.653 23.653 0 0 0-.612-.124L10.31 4.78c-.27-.057-.54-.11-.81-.162-.269-.053-.539-.103-.809-.149-.23-.04-.45-.073-.67-.101L4 4.905v.471zm-1-4.905h.003L5.85 3.496a.5.5 0 0 1-.316-.923L2.5 3.084V2.5a.5.5 0 0 1 1 0v.584zm11 0a.5.5 0 0 1 1 0v.584l-3.034-.923a.5.5 0 0 1-.316.923L12.5 3.496h.003V2.5a.5.5 0 0 1 1 0v.584zM12 1.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zm-11 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zM12 14.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5zm-11 0a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 0 1h-1a.5.5 0 0 1-.5-.5z"/>
@@ -41,14 +41,17 @@
           </a>
           <div class="collapse" id="reports-submenu">
             <ul class="nav flex-column ms-4">
-              <li class="nav-item">
+              <li v-if="isFinanceAdmin" class="nav-item">
                 <router-link to="/reports" class="nav-link text-white py-1" active-class="active">Ingresos por Actividad</router-link>
               </li>
-              <li class="nav-item">
+              <li v-if="isFinanceAdmin" class="nav-item">
                 <router-link to="/reports/income-vs-expenses" class="nav-link text-white py-1" active-class="active">Ingresos vs Gastos</router-link>
               </li>
-              <li class="nav-item">
+              <li v-if="isFinanceAdmin" class="nav-item">
                 <router-link to="/reports/category-distribution" class="nav-link text-white py-1" active-class="active">Distribución por Categorías</router-link>
+              </li>
+              <li v-if="isProfessor" class="nav-item">
+                <router-link to="/reports/my-students" class="nav-link text-white py-1" active-class="active">Estado de Cuenta Alumnos</router-link>
               </li>
             </ul>
           </div>
@@ -132,14 +135,17 @@
                 </a>
                 <div class="collapse" id="reports-submenu-mobile">
                   <ul class="nav flex-column ms-4">
-                    <li class="nav-item">
+                    <li v-if="isFinanceAdmin" class="nav-item">
                       <router-link to="/reports" class="nav-link py-1" active-class="active">Ingresos por Actividad</router-link>
                     </li>
-                    <li class="nav-item">
+                    <li v-if="isFinanceAdmin" class="nav-item">
                       <router-link to="/reports/income-vs-expenses" class="nav-link py-1" active-class="active">Ingresos vs Gastos</router-link>
                     </li>
-                    <li class="nav-item">
+                    <li v-if="isFinanceAdmin" class="nav-item">
                       <router-link to="/reports/category-distribution" class="nav-link py-1" active-class="active">Distribución por Categorías</router-link>
+                    </li>
+                    <li v-if="isProfessor" class="nav-item">
+                      <router-link to="/reports/my-students" class="nav-link py-1" active-class="active">Estado de Cuenta Alumnos</router-link>
                     </li>
                   </ul>
                 </div>
@@ -186,9 +192,24 @@ const canViewMembers = computed(() => {
   const role = currentUser.value?.role
   return role === 'admin' || role === 'tesorero' || role === 'profesor'
 })
+const canAccessFinancesView = computed(() => {
+  const role = currentUser.value?.role
+  return role === 'admin' || role === 'tesorero' || role === 'profesor'
+})
+
 const canManageFinances = computed(() => {
   const role = currentUser.value?.role
-  return role === 'admin' || role === 'tesorero' // Assuming tesorero can also see finances
+  return role === 'admin' || role === 'tesorero' || role === 'profesor'
+})
+
+const isFinanceAdmin = computed(() => {
+  const role = currentUser.value?.role
+  return role === 'admin' || role === 'tesorero'
+})
+
+const isProfessor = computed(() => {
+  const role = currentUser.value?.role
+  return role === 'profesor'
 })
 </script>
 
