@@ -18,8 +18,10 @@ const isTransactionModalVisible = ref(false);
 const showAddManualChargeModal = ref(false);
 
 const handleChargeAdded = () => {
-  fetchTransactions();
-  fetchAccountBalance();
+  if (isFinanceAdmin.value) {
+    fetchTransactions();
+    fetchAccountBalance();
+  }
 };
 
 // --- Debt Generation Logic ---
@@ -169,9 +171,11 @@ const getCategoryName = (id) => categories.value.find(c => c.id === id)?.name ||
 
 // --- Initial Data Load ---
 onMounted(() => {
-  fetchTransactions();
-  fetchCategories();
-  fetchAccountBalance();
+  if (isFinanceAdmin.value) {
+    fetchTransactions();
+    fetchCategories();
+    fetchAccountBalance();
+  }
 });
 </script>
 
