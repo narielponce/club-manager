@@ -1,13 +1,21 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { currentUser } from '../services/user.js'
+import { accessToken } from '../services/auth.js'
 import { apiFetch } from '../services/api.js'
 import CategoryManager from '../components/CategoryManager.vue'
+
+// --- Role check ---
+const isAdmin = computed(() => currentUser.value?.role === 'admin');
 
 // --- Base Fee Logic ---
 const baseFee = ref(0)
 const baseFeeMessage = ref('')
 const baseFeeError = ref(null)
+
+// --- Backup Logic ---
+const isDownloading = ref(false);
+const backupError = ref(null);
 
 // --- Lifecycle ---
 onMounted(() => {
@@ -38,11 +46,69 @@ const handleBaseFeeSubmit = async () => {
         }
   }
 }
+
+const downloadBackup = async () => {
+  isDownloading.value = true;
+  backupError.value = null;
+  try {
+    const response = await fetch('/api/admin/db-backup-csv', {
+      headers: {
+        'Authorization': `Bearer ${accessToken.value}`
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ detail: 'Error desconocido al generar el backup.' }));
+      throw new Error(errorData.detail);
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    
+    const timestamp = new Date().toISOString().slice(0, 10);
+    a.download = `backup-club-${currentUser.value.club.id}-${timestamp}.zip`;
+    
+    document.body.appendChild(a);
+    a.click();
+    
+    window.URL.revokeObjectURL(url);
+    a.remove();
+
+  } catch (e) {
+    backupError.value = e.message;
+  } finally {
+    isDownloading.value = false;
+  }
+}
 </script>
 
 <template>
   <div>
     <h1>Configuración y Tareas</h1>
+
+    <!-- Data Management Card (Admin Only) -->
+    <template v-if="isAdmin">
+      <div class="card shadow-sm mt-4">
+        <div class="card-header">
+          <h3>Administración de Datos</h3>
+        </div>
+        <div class="card-body">
+          <p class="text-muted">
+            Genera un respaldo completo de los datos de tu club. Se descargará un archivo .zip
+            conteniendo múltiples archivos .csv (uno por cada tabla de datos: socios, actividades, deudas, etc.).
+          </p>
+          <button class="btn btn-info" @click="downloadBackup" :disabled="isDownloading">
+            <span v-if="isDownloading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+            <span v-if="isDownloading"> Generando...</span>
+            <span v-else>Descargar Backup (CSV)</span>
+          </button>
+          <div v-if="backupError" class="alert alert-danger mt-3 py-2">{{ backupError }}</div>
+        </div>
+      </div>
+    </template>
 
     <!-- Base Fee Card -->
     <div class="card shadow-sm mt-4">

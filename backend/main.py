@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 import locale # Added this import
 
 from . import models, database, security
-from .routers import members, auth, users, activities, debts, club, superadmin, categories, transactions, reports, account
+from .routers import members, auth, users, activities, debts, club, superadmin, categories, transactions, reports, account, admin
 
 # --- Lifespan Events ---
 @asynccontextmanager
@@ -99,6 +99,7 @@ app.include_router(categories.router)
 app.include_router(transactions.router)
 app.include_router(reports.router)
 app.include_router(account.router) # Added
+app.include_router(admin.router)
 
 # --- Root Endpoint ---
 @app.get("/")
