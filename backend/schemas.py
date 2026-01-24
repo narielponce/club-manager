@@ -149,12 +149,6 @@ class TokenData(BaseModel):
 class DebtGenerationRequest(BaseModel):
     month: str # Expected format: YYYY-MM
 
-class ManualDebtCreate(BaseModel):
-    member_id: int
-    charge_date: date
-    amount: float
-    description: str
-
 class DebtItemBase(BaseModel):
     description: str
     amount: float
