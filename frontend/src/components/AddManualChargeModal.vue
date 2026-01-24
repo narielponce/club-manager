@@ -154,12 +154,12 @@ async function submitCharge() {
   errorMessage.value = '';
   try {
     const chargeData = {
-      ...form.value,
-      amount: parseFloat(form.value.amount)
+        ...form.value,
+        amount: parseFloat(form.value.amount)
     };
     await apiFetch('/debts/manual', {
-      method: 'POST',
-      body: JSON.stringify(chargeData)
+        method: 'POST',
+        body: JSON.stringify(chargeData)
     });
     emit('charge-added');
     closeModal();
