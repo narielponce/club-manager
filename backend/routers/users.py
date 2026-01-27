@@ -200,3 +200,35 @@ def delete_user_by_admin(user_id: int, db: Session = Depends(get_db), current_ad
         db.commit()
     
     return
+
+@router.post("/club/users/{user_id}/change-password", status_code=204)
+def change_user_password_by_admin(
+    user_id: int, 
+    password_in: schemas.AdminPasswordChange,
+    db: Session = Depends(get_db), 
+    current_admin: models.User = Depends(get_current_admin_user)
+):
+    """
+    Allows an admin to change the password of any user in their own club.
+    It will also force the user to change this password on their next login.
+    """
+    db_user = db.query(models.User).filter(
+        models.User.id == user_id,
+        models.User.club_id == current_admin.club_id
+    ).first()
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found in this club")
+
+    # Admins cannot change their own password using this endpoint
+    if user_id == current_admin.id:
+        raise HTTPException(status_code=400, detail="Admins cannot change their own password via this endpoint. Please use the 'Account' section.")
+
+    # Hash the new password and update the user
+    db_user.hashed_password = get_password_hash(password_in.new_password)
+    db_user.force_password_change = True
+    
+    db.add(db_user)
+    db.commit()
+    
+    return

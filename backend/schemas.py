@@ -263,6 +263,9 @@ class PasswordReset(BaseModel):
     token: str
     new_password: str
 
+class AdminPasswordChange(BaseModel):
+    new_password: str
+
 # --- Schemas for Reports ---
 class MonthlyBalanceItem(BaseModel):
     month: int
