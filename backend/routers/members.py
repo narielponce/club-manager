@@ -18,11 +18,13 @@ def get_all_members(
     current_user: schemas.User = Depends(get_current_user),
     page: int = 1,
     size: int = 10,
-    search: Optional[str] = None
+    search: Optional[str] = None,
+    activity_id: Optional[int] = None,
+    sort_by: Optional[str] = None
 ):
     """
     Get a paginated list of active members for the current user's club.
-    Can be filtered by a search term matching DNI or last name.
+    Can be filtered by a search term, activity, and sorted.
     """
     query = db.query(models.Member).filter(
         models.Member.club_id == current_user.club_id,
@@ -35,15 +37,29 @@ def get_all_members(
             models.Activity.profesor_id == current_user.id
         ).distinct()
 
+    # Filter by activity if provided
+    if activity_id:
+        query = query.join(models.Member.activities).filter(
+            models.Activity.id == activity_id
+        )
+
+    # Filter by search term if provided
     if search:
         search_term = f"%{search}%"
         query = query.filter(
             or_(
                 models.Member.first_name.ilike(search_term),
                 models.Member.last_name.ilike(search_term),
-                models.Member.dni == search
+                models.Member.dni.ilike(search_term)
             )
         )
+
+    # Sort the results
+    if sort_by == 'dni':
+        query = query.order_by(models.Member.dni)
+    else: # Default sort by last name
+        query = query.order_by(models.Member.last_name)
+
 
     total = query.count()
     items = query.offset((page - 1) * size).limit(size).all()

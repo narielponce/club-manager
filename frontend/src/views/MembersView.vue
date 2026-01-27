@@ -10,13 +10,16 @@ import { currentUser } from '../services/user.js'
 const members = ref([])
 const error = ref(null)
 const isLoading = ref(true)
+const activities = ref([])
 
 // --- Role-based access control ---
 const isAdmin = computed(() => currentUser.value?.role === 'admin')
 
-// --- Search State ---
-const searchQuery = ref('') // For the input field
-const searchTerm = ref('')  // The actual term being searched
+// --- Filter & Sort State ---
+const searchQuery = ref('')
+const searchTerm = ref('')
+const selectedActivityId = ref(null)
+const sortBy = ref('last_name') // Default sort
 
 // --- Pagination State ---
 const currentPage = ref(1)
@@ -32,23 +35,38 @@ const fetchMembers = async () => {
   try {
     isLoading.value = true
     error.value = null
-    let url = `/members?page=${currentPage.value}&size=${pageSize.value}`
+    let url = `/members?page=${currentPage.value}&size=${pageSize.value}&sort_by=${sortBy.value}`
     if (searchTerm.value) {
       url += `&search=${encodeURIComponent(searchTerm.value)}`
+    }
+    if (selectedActivityId.value) {
+      url += `&activity_id=${selectedActivityId.value}`
     }
     const data = await apiFetch(url)
     members.value = data.items
     totalMembers.value = data.total
-        } catch (e) {
-          if (e.name !== "SessionExpiredError") {
-            error.value = e.message
-          }
-        } finally {
-          isLoading.value = false
-        }
-      }
-// Fetch members when the component is first mounted
-onMounted(fetchMembers)
+  } catch (e) {
+    if (e.name !== "SessionExpiredError") {
+      error.value = e.message
+    }
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const fetchActivities = async () => {
+  try {
+    activities.value = await apiFetch('/activities/');
+  } catch (e) {
+    console.error("Failed to fetch activities for filter dropdown:", e);
+  }
+};
+
+// Fetch initial data
+onMounted(() => {
+  fetchMembers();
+  fetchActivities();
+});
 
 // --- Event Handlers ---
 const handleSearch = () => {
@@ -60,9 +78,16 @@ const handleSearch = () => {
 const clearSearch = () => {
   searchQuery.value = ''
   searchTerm.value = ''
+  selectedActivityId.value = null
   currentPage.value = 1
   fetchMembers()
 }
+
+const handleSort = (newSortBy) => {
+  sortBy.value = newSortBy;
+  currentPage.value = 1;
+  fetchMembers();
+};
 
 const handleMembersChanged = () => {
   // Reset to the first page if a member is added/deleted
@@ -77,8 +102,8 @@ const handlePageChange = (newPage) => {
   }
 }
 
-// Watch for changes in pageSize and refetch members
-watch(pageSize, () => {
+// Watch for changes and refetch members
+watch([pageSize, selectedActivityId], () => {
   currentPage.value = 1 // Reset to first page
   fetchMembers()
 })
@@ -125,21 +150,28 @@ const handleMemberUpdateFromModal = (updatedMember) => {
     <!-- Search Form -->
     <div class="card mb-4">
       <div class="card-body">
-        <form @submit.prevent="handleSearch" class="row g-3 align-items-center">
-          <div class="col-auto flex-grow-1">
-            <label for="search-input" class="visually-hidden">Buscar por DNI o Apellido</label>
+        <form @submit.prevent="handleSearch" class="row g-3 align-items-end">
+          <div class="col-md-5">
+            <label for="search-input" class="form-label">Buscar</label>
             <input
               type="text"
               id="search-input"
               class="form-control"
               v-model="searchQuery"
-              placeholder="Buscar por DNI o Apellido..."
+              placeholder="Por DNI, Nombre o Apellido..."
             />
           </div>
-          <div class="col-auto">
-            <button type="submit" class="btn btn-info">Buscar</button>
+          <div class="col-md-4">
+            <label for="activity-filter" class="form-label">Filtrar por Actividad</label>
+            <select id="activity-filter" class="form-select" v-model="selectedActivityId">
+              <option :value="null">Todas las actividades</option>
+              <option v-for="activity in activities" :key="activity.id" :value="activity.id">
+                {{ activity.name }}
+              </option>
+            </select>
           </div>
-          <div class="col-auto">
+          <div class="col-md-3 d-flex align-items-end">
+            <button type="submit" class="btn btn-info me-2">Buscar</button>
             <button type="button" class="btn btn-secondary" @click="clearSearch">Limpiar</button>
           </div>
         </form>
@@ -155,7 +187,9 @@ const handleMemberUpdateFromModal = (updatedMember) => {
       :currentPage="currentPage"
       :totalPages="totalPages"
       :pageSize.sync="pageSize"
+      :sort-by="sortBy"
       @page-change="handlePageChange"
+      @sort-change="handleSort"
       @update:pageSize="(value) => pageSize = value"
       @member-updated="handleMembersChanged"
       @member-deleted="handleMembersChanged"

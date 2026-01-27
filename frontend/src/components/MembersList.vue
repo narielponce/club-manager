@@ -29,6 +29,10 @@ defineProps({
   pageSize: {
     type: Number,
     required: true
+  },
+  sortBy: {
+    type: String,
+    required: true
   }
 })
 
@@ -38,7 +42,8 @@ const emit = defineEmits([
   'open-payments-modal',
   'open-activities-modal',
   'page-change',
-  'update:pageSize'
+  'update:pageSize',
+  'sort-change'
 ])
 
 // --- Delete Logic ---
@@ -143,8 +148,12 @@ const formatPhoneNumber = (phoneNumber) => {
         <table class="table table-striped table-hover align-middle">
           <thead>
             <tr>
-              <th>DNI</th>
-              <th>Apellido</th>
+              <th @click="$emit('sort-change', 'dni')" class="sortable-header">
+                DNI <span v-if="sortBy === 'dni'">▼</span>
+              </th>
+              <th @click="$emit('sort-change', 'last_name')" class="sortable-header">
+                Apellido <span v-if="sortBy === 'last_name'">▼</span>
+              </th>
               <th>Nombre</th>
               <th>Email</th>
               <th>Teléfono</th>
@@ -216,3 +225,11 @@ const formatPhoneNumber = (phoneNumber) => {
     </div>
   </div>
 </template>
+<style scoped>
+.sortable-header {
+  cursor: pointer;
+}
+.sortable-header:hover {
+  background-color: #f8f9fa;
+}
+</style>
