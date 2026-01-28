@@ -15,15 +15,23 @@ const newMember = reactive({
   phone: '',
   dni: '',
   birth_date: '',
+  member_type: 'N/A',
+  member_number: ''
 })
 
 const message = ref('')
 const error = ref(null)
 
 const resetForm = () => {
-  for (const key in newMember) {
-    newMember[key] = ''
-  }
+  newMember.first_name = ''
+  newMember.last_name = ''
+  newMember.email = ''
+  newMember.phone = ''
+  newMember.dni = ''
+  newMember.birth_date = ''
+  newMember.member_type = 'N/A'
+  newMember.member_number = ''
+  
   message.value = ''
   error.value = null
 }
@@ -75,22 +83,22 @@ watch(() => props.show, (newVal) => {
           <form @submit.prevent="handleSubmit">
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label for="modal-first_name" class="form-label">Nombre</label>
+                <label for="modal-first_name" class="form-label">Nombre <span class="text-danger">*</span></label>
                 <input type="text" id="modal-first_name" class="form-control" v-model="newMember.first_name" required />
               </div>
               <div class="col-md-6 mb-3">
-                <label for="modal-last_name" class="form-label">Apellido</label>
+                <label for="modal-last_name" class="form-label">Apellido <span class="text-danger">*</span></label>
                 <input type="text" id="modal-last_name" class="form-control" v-model="newMember.last_name" required />
               </div>
             </div>
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label for="modal-email" class="form-label">Email</label>
-                <input type="email" id="modal-email" class="form-control" v-model="newMember.email" required />
+                <label for="modal-phone" class="form-label">Teléfono <span class="text-danger">*</span></label>
+                <input type="tel" id="modal-phone" class="form-control" v-model="newMember.phone" required />
               </div>
               <div class="col-md-6 mb-3">
-                <label for="modal-phone" class="form-label">Teléfono</label>
-                <input type="tel" id="modal-phone" class="form-control" v-model="newMember.phone" />
+                <label for="modal-email" class="form-label">Email</label>
+                <input type="email" id="modal-email" class="form-control" v-model="newMember.email" />
               </div>
             </div>
             <div class="row">
@@ -101,6 +109,20 @@ watch(() => props.show, (newVal) => {
               <div class="col-md-6 mb-3">
                 <label for="modal-birth_date" class="form-label">Fecha de Nacimiento</label>
                 <input type="date" id="modal-birth_date" class="form-control" v-model="newMember.birth_date" />
+              </div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label for="modal-member-type" class="form-label">Tipo de Socio</label>
+                <select id="modal-member-type" class="form-select" v-model="newMember.member_type">
+                  <option>N/A</option>
+                  <option>Adherente</option>
+                  <option>Deportivo</option>
+                </select>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label for="modal-member-number" class="form-label">Número de Socio</label>
+                <input type="text" id="modal-member-number" class="form-control" v-model="newMember.member_number" />
               </div>
             </div>
             <div v-if="message" class="alert alert-success mt-3 py-2">{{ message }}</div>

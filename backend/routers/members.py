@@ -67,12 +67,15 @@ def get_all_members(
 
 @router.post("", response_model=schemas.Member, status_code=201, dependencies=[Depends(require_roles(['admin']))])
 def create_new_member(member_in: schemas.MemberCreate, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
-    db_member_exists = db.query(models.Member).filter(
-        models.Member.club_id == current_user.club_id,
-        models.Member.email == member_in.email
-    ).first()
-    if db_member_exists:
-        raise HTTPException(status_code=400, detail="Email already registered for this club")
+    # Check for existing email if provided
+    if member_in.email:
+        db_member_exists = db.query(models.Member).filter(
+            models.Member.club_id == current_user.club_id,
+            models.Member.email == member_in.email
+        ).first()
+        if db_member_exists:
+            raise HTTPException(status_code=400, detail="Email already registered for this club")
+
     db_member = models.Member(**member_in.model_dump(), club_id=current_user.club_id)
     db.add(db_member)
     db.commit()
@@ -87,9 +90,12 @@ def update_member(member_id: int, member_update: schemas.MemberUpdate, db: Sessi
     ).first()
     if not db_member or not db_member.is_active:
         raise HTTPException(status_code=404, detail="Active member not found")
+        
     update_data = member_update.model_dump(exclude_unset=True)
+
     for key, value in update_data.items():
         setattr(db_member, key, value)
+        
     db.add(db_member)
     db.commit()
     db.refresh(db_member)

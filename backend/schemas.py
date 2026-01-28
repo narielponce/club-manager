@@ -14,10 +14,12 @@ class UserRole(str, enum.Enum):
 class MemberBase(BaseModel):
     first_name: str
     last_name: str
-    email: str
-    phone: Optional[str] = None
+    email: Optional[str] = None
+    phone: str
     dni: Optional[str] = None
     birth_date: Optional[date] = None
+    member_type: Optional[str] = None
+    member_number: Optional[str] = None
 
 class MemberCreate(MemberBase):
     pass
@@ -44,6 +46,8 @@ class Member(MemberBase):
     id: int
     is_active: bool
     activities: List[Activity] = []
+    member_type: Optional[str] = None
+    member_number: Optional[str] = None
     class Config:
         from_attributes = True
 

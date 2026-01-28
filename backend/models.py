@@ -65,17 +65,24 @@ class Activity(Base):
         back_populates="activities"
     )
 
+class MemberTypeEnum(str, enum.Enum):
+    ADHERENTE = "Adherente"
+    DEPORTIVO = "Deportivo"
+    NA = "N/A"
+
 class Member(Base):
     __tablename__ = "members"
 
     id = Column(Integer, primary_key=True, index=True)
     first_name = Column(String, index=True, nullable=False)
     last_name = Column(String, index=True, nullable=False)
-    email = Column(String, index=True)
-    phone = Column(String, nullable=True)
+    email = Column(String, index=True, nullable=True)
+    phone = Column(String, nullable=False)
     dni = Column(String, index=True, nullable=True)
     birth_date = Column(Date, nullable=True)
     is_active = Column(Boolean, default=True)
+    member_type = Column(String(10), nullable=False, default=MemberTypeEnum.NA.value)
+    member_number = Column(String, nullable=True)
 
     club_id = Column(Integer, ForeignKey("clubs.id"))
     club = relationship("Club", back_populates="members")

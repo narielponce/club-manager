@@ -70,6 +70,8 @@ const handleDelete = async (memberId) => {
       phone: '',
       dni: '',
       birth_date: '',
+      member_type: 'N/A',
+      member_number: '',
     })
 
     const startEditing = (member) => {
@@ -80,6 +82,8 @@ const handleDelete = async (memberId) => {
       editFormData.phone = member.phone
       editFormData.dni = member.dni
       editFormData.birth_date = member.birth_date
+      editFormData.member_type = member.member_type || 'N/A'
+      editFormData.member_number = member.member_number
     }
 
     const cancelEditing = () => {
@@ -155,6 +159,8 @@ const formatPhoneNumber = (phoneNumber) => {
                 Apellido <span v-if="sortBy === 'last_name'">▼</span>
               </th>
               <th>Nombre</th>
+              <th>N° Socio</th>
+              <th>Tipo Socio</th>
               <th>Email</th>
               <th>Teléfono</th>
               <th class="text-end">Acciones</th>
@@ -166,6 +172,8 @@ const formatPhoneNumber = (phoneNumber) => {
                 <td>{{ formatDni(member.dni) }}</td>
                 <td>{{ member.last_name }}</td>
                 <td>{{ member.first_name }}</td>
+                <td>{{ member.member_number || '-' }}</td>
+                <td>{{ member.member_type || 'N/A' }}</td>
                 <td>{{ member.email }}</td>
                 <td>{{ formatPhoneNumber(member.phone) }}</td>
                 <td class="text-end">
@@ -177,10 +185,18 @@ const formatPhoneNumber = (phoneNumber) => {
               </template>
               <template v-else>
                 <td><input type="text" v-model="editFormData.dni" class="form-control form-control-sm" /></td>
-                <td><input type="text" v-model="editFormData.last_name" class="form-control form-control-sm" /></td>
-                <td><input type="text" v-model="editFormData.first_name" class="form-control form-control-sm" /></td>
+                <td><input type="text" v-model="editFormData.last_name" class="form-control form-control-sm" required/></td>
+                <td><input type="text" v-model="editFormData.first_name" class="form-control form-control-sm" required/></td>
+                <td><input type="text" v-model="editFormData.member_number" class="form-control form-control-sm" /></td>
+                <td>
+                  <select class="form-select form-select-sm" v-model="editFormData.member_type">
+                    <option>N/A</option>
+                    <option>Adherente</option>
+                    <option>Deportivo</option>
+                  </select>
+                </td>
                 <td><input type="email" v-model="editFormData.email" class="form-control form-control-sm" /></td>
-                <td><input type="tel" v-model="editFormData.phone" class="form-control form-control-sm" /></td>
+                <td><input type="tel" v-model="editFormData.phone" class="form-control form-control-sm" required/></td>
                 <td class="text-end">
                   <button @click="handleUpdate(member.id)" class="btn btn-success btn-sm me-2">Guardar</button>
                   <button @click="cancelEditing" class="btn btn-secondary btn-sm">Cancelar</button>
@@ -188,7 +204,7 @@ const formatPhoneNumber = (phoneNumber) => {
               </template>
             </tr>
             <tr v-if="members.length === 0">
-              <td colspan="6" class="text-center text-muted">No hay socios para mostrar.</td>
+              <td colspan="8" class="text-center text-muted">No hay socios para mostrar.</td>
             </tr>
           </tbody>
         </table>
