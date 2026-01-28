@@ -4,6 +4,10 @@ import { apiFetch } from '../services/api.js'
 import { currentUser } from '../services/user.js'
 import AddManualChargeModal from '../components/AddManualChargeModal.vue'
 
+// --- Filter State ---
+const filterType = ref(null);
+const filterMonth = ref('');
+
 // --- Role-based access control ---
 const isFinanceAdmin = computed(() => {
   const role = currentUser.value?.role;
@@ -79,7 +83,21 @@ const fetchTransactions = async () => {
     transactionsLoading.value = true;
     transactionsError.value = null;
     const skip = (currentPage.value - 1) * pageSize.value;
-    const response = await apiFetch(`/transactions/?skip=${skip}&limit=${pageSize.value}`);
+    let url = `/transactions/?skip=${skip}&limit=${pageSize.value}`;
+
+    if (filterType.value) {
+      url += `&type=${filterType.value}`;
+    }
+    if (filterMonth.value) {
+      const year = filterMonth.value.split('-')[0];
+      const month = filterMonth.value.split('-')[1];
+      const startDate = `${year}-${month}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const endDate = `${year}-${month}-${lastDay}`;
+      url += `&start_date=${startDate}&end_date=${endDate}`;
+    }
+
+    const response = await apiFetch(url);
     transactions.value = response.items;
     totalTransactions.value = response.total;
   } catch (e) {
@@ -89,6 +107,18 @@ const fetchTransactions = async () => {
   } finally {
     transactionsLoading.value = false;
   }
+};
+
+const handleFilter = () => {
+  currentPage.value = 1;
+  fetchTransactions();
+};
+
+const clearFilters = () => {
+  filterType.value = null;
+  filterMonth.value = '';
+  currentPage.value = 1;
+  fetchTransactions();
 };
 
 const handlePageChange = (newPage) => {
@@ -201,6 +231,33 @@ onMounted(() => {
 
     <!-- Transactions List -->
     <template v-if="isFinanceAdmin">
+      <!-- Filters Card -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-header">
+          <h4>Filtros</h4>
+        </div>
+        <div class="card-body">
+          <form @submit.prevent="handleFilter" class="row g-3 align-items-end">
+            <div class="col-md-4">
+              <label for="filter-type" class="form-label">Tipo de Transacción</label>
+              <select id="filter-type" class="form-select" v-model="filterType">
+                <option :value="null">Todos</option>
+                <option value="income">Ingresos</option>
+                <option value="expense">Egresos</option>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="filter-month" class="form-label">Mes y Año</label>
+              <input type="month" id="filter-month" class="form-control" v-model="filterMonth">
+            </div>
+            <div class="col-md-4 d-flex align-items-end">
+              <button type="submit" class="btn btn-info me-2">Filtrar</button>
+              <button type="button" class="btn btn-secondary" @click="clearFilters">Limpiar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+
       <div class="card shadow-sm mt-4">
         <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
           <h3>Historial de Transacciones</h3>
