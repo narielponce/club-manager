@@ -6,7 +6,24 @@ import AddManualChargeModal from '../components/AddManualChargeModal.vue'
 
 // --- Filter State ---
 const filterType = ref(null);
-const filterMonth = ref('');
+const filterYear = ref(null);
+const filterMonth = ref(null);
+
+const yearOptions = computed(() => {
+  const currentYear = new Date().getFullYear();
+  const years = [];
+  for (let i = currentYear; i >= 2020; i--) {
+    years.push(i);
+  }
+  return years;
+});
+
+const monthOptions = [
+  { value: 1, name: 'Enero' }, { value: 2, name: 'Febrero' }, { value: 3, name: 'Marzo' },
+  { value: 4, name: 'Abril' }, { value: 5, name: 'Mayo' }, { value: 6, name: 'Junio' },
+  { value: 7, name: 'Julio' }, { value: 8, name: 'Agosto' }, { value: 9, name: 'Septiembre' },
+  { value: 10, name: 'Octubre' }, { value: 11, name: 'Noviembre' }, { value: 12, name: 'Diciembre' },
+];
 
 // --- Role-based access control ---
 const isFinanceAdmin = computed(() => {
@@ -88,12 +105,12 @@ const fetchTransactions = async () => {
     if (filterType.value) {
       url += `&type=${filterType.value}`;
     }
-    if (filterMonth.value) {
-      const year = filterMonth.value.split('-')[0];
-      const month = filterMonth.value.split('-')[1];
-      const startDate = `${year}-${month}-01`;
+    if (filterYear.value && filterMonth.value) {
+      const year = filterYear.value;
+      const month = filterMonth.value;
+      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
       const lastDay = new Date(year, month, 0).getDate();
-      const endDate = `${year}-${month}-${lastDay}`;
+      const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
       url += `&start_date=${startDate}&end_date=${endDate}`;
     }
 
@@ -116,7 +133,8 @@ const handleFilter = () => {
 
 const clearFilters = () => {
   filterType.value = null;
-  filterMonth.value = '';
+  filterYear.value = null;
+  filterMonth.value = null;
   currentPage.value = 1;
   fetchTransactions();
 };
@@ -238,19 +256,29 @@ onMounted(() => {
         </div>
         <div class="card-body">
           <form @submit.prevent="handleFilter" class="row g-3 align-items-end">
-            <div class="col-md-4">
-              <label for="filter-type" class="form-label">Tipo de Transacción</label>
+            <div class="col-md-3">
+              <label for="filter-type" class="form-label">Tipo</label>
               <select id="filter-type" class="form-select" v-model="filterType">
                 <option :value="null">Todos</option>
                 <option value="income">Ingresos</option>
                 <option value="expense">Egresos</option>
               </select>
             </div>
-            <div class="col-md-4">
-              <label for="filter-month" class="form-label">Mes y Año</label>
-              <input type="month" id="filter-month" class="form-control" v-model="filterMonth">
+            <div class="col-md-3">
+              <label for="filter-year" class="form-label">Año</label>
+              <select id="filter-year" class="form-select" v-model="filterYear">
+                <option :value="null">Cualquiera</option>
+                <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}</option>
+              </select>
             </div>
-            <div class="col-md-4 d-flex align-items-end">
+            <div class="col-md-3">
+              <label for="filter-month" class="form-label">Mes</label>
+              <select id="filter-month" class="form-select" v-model="filterMonth">
+                <option :value="null">Cualquiera</option>
+                <option v-for="month in monthOptions" :key="month.value" :value="month.value">{{ month.name }}</option>
+              </select>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
               <button type="submit" class="btn btn-info me-2">Filtrar</button>
               <button type="button" class="btn btn-secondary" @click="clearFilters">Limpiar</button>
             </div>
