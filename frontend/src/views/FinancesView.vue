@@ -112,6 +112,18 @@ const fetchTransactions = async () => {
       const lastDay = new Date(year, month, 0).getDate();
       const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
       url += `&start_date=${startDate}&end_date=${endDate}`;
+    } else if (filterYear.value) {
+      const year = filterYear.value;
+      const startDate = `${year}-01-01`;
+      const endDate = `${year}-12-31`;
+      url += `&start_date=${startDate}&end_date=${endDate}`;
+    } else if (filterMonth.value) {
+      const year = new Date().getFullYear();
+      const month = filterMonth.value;
+      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const endDate = `${year}-${String(month).padStart(2, '0')}-${lastDay}`;
+      url += `&start_date=${startDate}&end_date=${endDate}`;
     }
 
     const response = await apiFetch(url);

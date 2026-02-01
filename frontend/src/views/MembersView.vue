@@ -6,6 +6,8 @@ import MemberActivitiesModal from '../components/MemberActivitiesModal.vue'
 import AddMemberModal from '../components/AddMemberModal.vue'
 import { apiFetch } from '../services/api.js'
 import { currentUser } from '../services/user.js'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
 
 const members = ref([])
 const error = ref(null)
@@ -95,6 +97,75 @@ const handleMembersChanged = () => {
   fetchMembers()
 }
 
+const isPrinting = ref(false);
+
+const handlePrint = async () => {
+  error.value = null;
+  isPrinting.value = true;
+
+  try {
+    // 1. Fetch all members that match the current filter
+    let url = `/members?page=1&size=10000&sort_by=${sortBy.value}`; // High limit for size
+    if (searchTerm.value) {
+      url += `&search=${encodeURIComponent(searchTerm.value)}`;
+    }
+    if (selectedActivityId.value) {
+      url += `&activity_id=${selectedActivityId.value}`;
+    }
+    const data = await apiFetch(url);
+    const membersToPrint = data.items;
+
+    if (membersToPrint.length === 0) {
+      alert("No hay socios para imprimir con los filtros actuales.");
+      isPrinting.value = false;
+      return;
+    }
+
+    // 2. Generate PDF
+    const doc = new jsPDF();
+    
+    const activityName = selectedActivityId.value 
+      ? activities.value.find(a => a.id === selectedActivityId.value)?.name 
+      : 'Todas las actividades';
+    
+    doc.text(`Listado de Socios`, 14, 16);
+    doc.setFontSize(10);
+    doc.text(`Filtro de Actividad: ${activityName || 'N/A'}`, 14, 22);
+    doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, 14, 28);
+
+
+    const tableColumn = ["DNI", "Apellido", "Nombre", "Email", "Teléfono"];
+    const tableRows = [];
+
+    membersToPrint.forEach(member => {
+      const memberData = [
+        member.dni,
+        member.last_name,
+        member.first_name,
+        member.email || '-',
+        member.phone_number || '-'
+      ];
+      tableRows.push(memberData);
+    });
+
+    autoTable(doc, {
+      head: [tableColumn],
+      body: tableRows,
+      startY: 35,
+    });
+
+    // 3. Save the PDF
+    doc.save('listado-socios.pdf');
+
+  } catch (e) {
+    if (e.name !== "SessionExpiredError") {
+      error.value = "Error al generar el PDF: " + e.message;
+    }
+  } finally {
+    isPrinting.value = false;
+  }
+};
+
 const handlePageChange = (newPage) => {
   if (newPage > 0 && newPage <= totalPages.value) {
     currentPage.value = newPage
@@ -172,7 +243,11 @@ const handleMemberUpdateFromModal = (updatedMember) => {
           </div>
           <div class="col-md-3 d-flex align-items-end">
             <button type="submit" class="btn btn-info me-2">Buscar</button>
-            <button type="button" class="btn btn-secondary" @click="clearSearch">Limpiar</button>
+            <button type="button" class="btn btn-secondary me-2" @click="clearSearch">Limpiar</button>
+            <button type="button" class="btn btn-outline-primary" @click="handlePrint" :disabled="isPrinting">
+              <span v-if="isPrinting" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+              {{ isPrinting ? 'Generando...' : 'Imprimir' }}
+            </button>
           </div>
         </form>
       </div>
