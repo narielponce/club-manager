@@ -117,28 +117,52 @@ const getCategoryTypeLabel = (type) => {
       <div v-if="error" class="alert alert-danger">{{ error }}</div>
 
       <div v-if="!isLoading && !error">
-        <table class="table table-striped table-hover align-middle">
-          <thead>
-            <tr>
-              <th>Nombre</th>
-              <th>Tipo</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="category in categories" :key="category.id">
-              <td>{{ category.name }}</td>
-              <td>{{ getCategoryTypeLabel(category.type) }}</td>
-              <td class="text-end">
-                <button class="btn btn-sm btn-primary me-2" @click="openEditModal(category)">Editar</button>
+        <!-- Desktop view: Table -->
+        <div class="table-responsive d-none d-lg-block">
+          <table class="table table-striped table-hover align-middle">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Tipo</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="category in categories" :key="category.id">
+                <td>{{ category.name }}</td>
+                <td><span :class="category.type === 'income' ? 'badge bg-success' : 'badge bg-danger'">{{ getCategoryTypeLabel(category.type) }}</span></td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-primary me-2" @click="openEditModal(category)">Editar</button>
+                  <button class="btn btn-sm btn-danger" @click="handleDelete(category.id)">Eliminar</button>
+                </td>
+              </tr>
+              <tr v-if="categories.length === 0">
+                <td colspan="3" class="text-center text-muted">No hay categorías definidas.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile view: Cards -->
+        <div class="d-block d-lg-none">
+          <div v-if="categories.length === 0" class="text-center text-muted">
+            No hay categorías definidas.
+          </div>
+          <div v-for="category in categories" :key="`mobile-${category.id}`" class="card mb-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+              <div>
+                <h5 class="card-title mb-1">{{ category.name }}</h5>
+                <span :class="category.type === 'income' ? 'badge bg-success' : 'badge bg-danger'">
+                  {{ getCategoryTypeLabel(category.type) }}
+                </span>
+              </div>
+              <div class="d-flex flex-column flex-sm-row gap-2">
+                <button class="btn btn-sm btn-primary" @click="openEditModal(category)">Editar</button>
                 <button class="btn btn-sm btn-danger" @click="handleDelete(category.id)">Eliminar</button>
-              </td>
-            </tr>
-            <tr v-if="categories.length === 0">
-              <td colspan="3" class="text-center text-muted">No hay categorías definidas.</td>
-            </tr>
-          </tbody>
-        </table>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

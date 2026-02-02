@@ -74,7 +74,8 @@ const handleUpdate = async (activityId) => {
       <h3>Actividades del Club</h3>
     </div>
     <div class="card-body">
-      <div class="table-responsive">
+      <!-- Desktop view: Table -->
+      <div class="table-responsive d-none d-lg-block">
         <table class="table table-striped table-hover align-middle">
           <thead>
             <tr>
@@ -122,6 +123,58 @@ const handleUpdate = async (activityId) => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <!-- Mobile view: Cards -->
+      <div class="d-block d-lg-none">
+        <div v-if="activities.length === 0" class="text-center text-muted">
+          No hay actividades creadas.
+        </div>
+        <div v-for="activity in activities" :key="`mobile-${activity.id}`" class="card mb-3">
+          <!-- View Mode -->
+          <template v-if="editingActivityId !== activity.id">
+            <div class="card-body">
+              <h5 class="card-title">{{ activity.name }}</h5>
+              <p class="card-text mb-1">
+                <strong>Costo:</strong> {{ $formatCurrency(activity.monthly_cost) }}
+              </p>
+              <p class="card-text text-muted">
+                <strong>Profesor:</strong> {{ activity.profesor?.email || 'Sin asignar' }}
+              </p>
+            </div>
+            <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+              <button @click="startEditing(activity)" class="btn btn-primary btn-sm">Editar</button>
+              <button @click="handleDelete(activity.id)" class="btn btn-danger btn-sm">Eliminar</button>
+            </div>
+          </template>
+          <!-- Edit Mode -->
+          <template v-else>
+            <div class="card-body">
+              <h5 class="card-title">Editando Actividad</h5>
+              <div class="mb-2">
+                <label class="form-label">Nombre</label>
+                <input type="text" v-model="editFormData.name" class="form-control form-control-sm" />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Costo Mensual</label>
+                <input type="number" step="0.01" v-model="editFormData.monthly_cost" class="form-control form-control-sm" />
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Profesor</label>
+                <select class="form-select form-select-sm" v-model="editFormData.profesor_id">
+                  <option :value="null">Sin asignar</option>
+                  <option v-for="profesor in professors" :key="profesor.id" :value="profesor.id">
+                    {{ profesor.email }}
+                  </option>
+                </select>
+              </div>
+            </div>
+            <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+              <button @click="handleUpdate(activity.id)" class="btn btn-success btn-sm">Guardar</button>
+              <button @click="cancelEditing" class="btn btn-secondary btn-sm">Cancelar</button>
+            </div>
+          </template>
+        </div>
       </div>
     </div>
   </div>

@@ -76,55 +76,125 @@ const handleUpdate = async (userId) => {
         <h3>Usuarios del Club</h3>
       </div>
       <div class="card-body">
-        <table class="table table-striped table-hover align-middle">
-          <thead>
-            <tr>
-              <th scope="col">Email</th>
-              <th scope="col">Rol</th>
-              <th scope="col">Estado</th>
-              <th scope="col" class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="user in users" :key="user.id">
-              <template v-if="editingUserId !== user.id">
-                <td>{{ user.email }}</td>
-                <td>{{ user.role }}</td>
-                <td>
+        <!-- Desktop view: Table -->
+        <div class="table-responsive d-none d-lg-block">
+          <table class="table table-striped table-hover align-middle">
+            <thead>
+              <tr>
+                <th scope="col">Email</th>
+                <th scope="col">Rol</th>
+                <th scope="col">Estado</th>
+                <th scope="col" class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="user in users" :key="user.id">
+                <template v-if="editingUserId !== user.id">
+                  <td>{{ user.email }}</td>
+                  <td>{{ user.role }}</td>
+                  <td>
+                    <span :class="user.is_active ? 'text-success' : 'text-danger'">
+                      {{ user.is_active ? 'Activo' : 'Inactivo' }}
+                    </span>
+                  </td>
+                  <td class="text-end">
+                    <button @click="startEditing(user)" class="btn btn-primary btn-sm me-2">Editar</button>
+                    <button v-if="user.is_active" @click="handleDelete(user.id)"
+                      class="btn btn-warning btn-sm">Desactivar</button>
+                  </td>
+                </template>
+                <template v-else>
+                  <td>{{ user.email }}</td>
+                  <td>
+                    <select v-model="editFormData.role" class="form-select form-select-sm">
+                      <option v-for="r in availableRoles" :key="r" :value="r">{{ r }}</option>
+                    </select>
+                  </td>
+                  <td>
+                    <select v-model="editFormData.is_active" class="form-select form-select-sm">
+                      <option :value="true">Activo</option>
+                      <option :value="false">Inactivo</option>
+                    </select>
+                  </td>
+                  <td class="text-end">
+                    <button @click="showPasswordModal = true; selectedUser = user" type="button" class="btn btn-secondary btn-sm me-2">
+                      Cambiar Contraseña
+                    </button>
+                    <button @click="handleUpdate(user.id)" class="btn btn-success btn-sm me-2">Guardar</button>
+                    <button @click="cancelEditing" class="btn btn-dark btn-sm">Cancelar</button>
+                  </td>
+                </template>
+              </tr>
+              <tr v-if="users.length === 0">
+                <td colspan="4" class="text-center text-muted">No hay usuarios para mostrar.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Mobile view: Cards -->
+        <div class="d-block d-lg-none">
+          <div v-if="users.length === 0" class="text-center text-muted">
+            No hay usuarios para mostrar.
+          </div>
+          <div v-for="user in users" :key="`mobile-${user.id}`" class="card mb-3">
+            <!-- View Mode -->
+            <template v-if="editingUserId !== user.id">
+              <div class="card-body">
+                <h5 class="card-title">{{ user.email }}</h5>
+                <p class="card-text mb-1">
+                  <strong>Rol:</strong> {{ user.role }}
+                </p>
+                <p class="card-text text-muted">
+                  <strong>Estado:</strong>
                   <span :class="user.is_active ? 'text-success' : 'text-danger'">
                     {{ user.is_active ? 'Activo' : 'Inactivo' }}
                   </span>
-                </td>
-                <td class="text-end">
-                  <button @click="startEditing(user)" class="btn btn-primary btn-sm me-2">Editar</button>
-                  <button v-if="user.is_active" @click="handleDelete(user.id)"
-                    class="btn btn-warning btn-sm">Desactivar</button>
-                </td>
-              </template>
-              <template v-else>
-                <td>{{ user.email }}</td>
-                <td>
+                </p>
+              </div>
+              <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+                  <div class="dropdown">
+                      <button class="btn btn-primary btn-sm dropdown-toggle" type="button" :id="`dropdownUserActions-${user.id}`" data-bs-toggle="dropdown" aria-expanded="false">
+                          Acciones
+                      </button>
+                      <ul class="dropdown-menu" :aria-labelledby="`dropdownUserActions-${user.id}`">
+                          <li><a class="dropdown-item" href="#" @click.prevent="startEditing(user)">Editar</a></li>
+                          <template v-if="user.is_active">
+                              <li><hr class="dropdown-divider"></li>
+                              <li><a class="dropdown-item text-danger" href="#" @click.prevent="handleDelete(user.id)">Desactivar</a></li>
+                          </template>
+                      </ul>
+                  </div>
+              </div>
+            </template>
+            <!-- Edit Mode -->
+            <template v-else>
+              <div class="card-body">
+                <h5 class="card-title">Editando Usuario: {{ user.email }}</h5>
+                <div class="mb-2">
+                  <label class="form-label">Rol</label>
                   <select v-model="editFormData.role" class="form-select form-select-sm">
                     <option v-for="r in availableRoles" :key="r" :value="r">{{ r }}</option>
                   </select>
-                </td>
-                <td>
+                </div>
+                <div class="mb-2">
+                  <label class="form-label">Estado</label>
                   <select v-model="editFormData.is_active" class="form-select form-select-sm">
                     <option :value="true">Activo</option>
                     <option :value="false">Inactivo</option>
                   </select>
-                </td>
-                <td class="text-end">
-                  <button @click="showPasswordModal = true" type="button" class="btn btn-secondary btn-sm me-2">
-                    Cambiar Contraseña
+                </div>
+              </div>
+              <div class="card-footer bg-transparent d-flex justify-content-end flex-wrap gap-2">
+                  <button @click="showPasswordModal = true; selectedUser = user" type="button" class="btn btn-secondary btn-sm">
+                      Cambiar Contraseña
                   </button>
-                  <button @click="handleUpdate(user.id)" class="btn btn-success btn-sm me-2">Guardar</button>
+                  <button @click="handleUpdate(user.id)" class="btn btn-success btn-sm">Guardar</button>
                   <button @click="cancelEditing" class="btn btn-dark btn-sm">Cancelar</button>
-                </td>
-              </template>
-            </tr>
-          </tbody>
-        </table>
+              </div>
+            </template>
+          </div>
+        </div>
       </div>
     </div>
 

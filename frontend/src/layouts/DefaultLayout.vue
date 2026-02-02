@@ -100,6 +100,17 @@
       <!-- Topbar (becomes collapsible on small screens) -->
       <nav class="navbar navbar-expand-lg navbar-light bg-white topbar static-top shadow">
         <div class="container-fluid">
+          <!-- Mobile Navbar Brand -->
+          <router-link to="/" class="navbar-brand d-flex align-items-center d-lg-none">
+            <img :src="logoSrc" alt="Logo" width="30" height="30" class="d-inline-block align-text-top rounded-circle me-2">
+            <span v-if="currentUser && currentUser.club" class="fs-6 text-truncate" style="max-width: 150px;">
+              {{ currentUser.club.name }}
+            </span>
+             <span v-else-if="currentUser?.role === 'superadmin'" class="fs-6">
+              Superadmin
+            </span>
+          </router-link>
+
           <!-- Hamburger Toggler (Visible on small screens) -->
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbarCollapse"
             aria-controls="mainNavbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
@@ -113,7 +124,7 @@
               <li v-if="canViewMembers" class="nav-item d-lg-none">
                 <router-link to="/" class="nav-link" active-class="active">Socios</router-link>
               </li>
-              <li v-if="canManageFinances" class="nav-item d-lg-none">
+              <li v-if="canAccessFinancesView" class="nav-item d-lg-none">
                 <router-link to="/finances" class="nav-link" active-class="active">Finanzas</router-link>
               </li>
               <li v-if="isAdmin" class="nav-item d-lg-none">
@@ -126,29 +137,24 @@
                 <router-link to="/settings" class="nav-link" active-class="active">Configuración</router-link>
               </li>
               <!-- Informes menu for mobile -->
-              <li v-if="canManageFinances" class="nav-item d-lg-none">
-                <a class="nav-link d-flex align-items-center" data-bs-toggle="collapse" href="#reports-submenu-mobile" role="button" aria-expanded="false" aria-controls="reports-submenu-mobile">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-bar-chart-line-fill me-2" viewBox="0 0 16 16">
-                    <path d="M11 2a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v12h.5a.5.5 0 0 1 0 1H.5a.5.5 0 0 1 0-1H1v-3a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v3h1V7a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v7h1V2z"/>
-                  </svg>
-                  Informes
+              <li v-if="canManageFinances" class="nav-item dropdown d-lg-none">
+                <a class="nav-link dropdown-toggle" href="#" id="reports-dropdown-mobile" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                   Informes
                 </a>
-                <div class="collapse" id="reports-submenu-mobile">
-                  <ul class="nav flex-column ms-4">
-                    <li v-if="isFinanceAdmin" class="nav-item">
-                      <router-link to="/reports" class="nav-link py-1" active-class="active">Ingresos por Actividad</router-link>
+                <ul class="dropdown-menu" aria-labelledby="reports-dropdown-mobile">
+                    <li v-if="isFinanceAdmin">
+                      <router-link to="/reports" class="dropdown-item" active-class="active">Ingresos por Actividad</router-link>
                     </li>
-                    <li v-if="isFinanceAdmin" class="nav-item">
-                      <router-link to="/reports/income-vs-expenses" class="nav-link py-1" active-class="active">Ingresos vs Gastos</router-link>
+                    <li v-if="isFinanceAdmin">
+                      <router-link to="/reports/income-vs-expenses" class="dropdown-item" active-class="active">Ingresos vs Gastos</router-link>
                     </li>
-                    <li v-if="isFinanceAdmin" class="nav-item">
-                      <router-link to="/reports/category-distribution" class="nav-link py-1" active-class="active">Distribución por Categorías</router-link>
+                    <li v-if="isFinanceAdmin">
+                      <router-link to="/reports/category-distribution" class="dropdown-item" active-class="active">Distribución por Categorías</router-link>
                     </li>
-                    <li v-if="isProfessor" class="nav-item">
-                      <router-link to="/reports/my-students" class="nav-link py-1" active-class="active">Estado de Cuenta Alumnos</router-link>
+                    <li v-if="isProfessor">
+                      <router-link to="/reports/my-students" class="dropdown-item" active-class="active">Estado de Cuenta Alumnos</router-link>
                     </li>
-                  </ul>
-                </div>
+                </ul>
               </li>
               <li v-if="currentUser" class="nav-item d-lg-none">
                 <a href="#" @click.prevent="logout" class="nav-link">Logout</a>

@@ -148,7 +148,8 @@ const formatPhoneNumber = (phoneNumber) => {
       <h2>Listado de Socios</h2>
     </div>
     <div class="card-body">
-      <div class="table-responsive">
+      <!-- Desktop view: Table -->
+      <div class="table-responsive d-none d-lg-block">
         <table class="table table-striped table-hover align-middle">
           <thead>
             <tr>
@@ -208,6 +209,94 @@ const formatPhoneNumber = (phoneNumber) => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+       <!-- Mobile view: Cards -->
+      <div class="d-block d-lg-none">
+        <div v-if="members.length === 0" class="text-center text-muted mt-3">
+          No hay socios para mostrar.
+        </div>
+        <div v-for="member in members" :key="`mobile-${member.id}`" class="card mb-3">
+          <!-- View Mode -->
+          <template v-if="editingMemberId !== member.id">
+            <div class="card-body">
+              <h5 class="card-title">{{ member.last_name }}, {{ member.first_name }}</h5>
+              <h6 class="card-subtitle mb-2 text-muted">
+                DNI: {{ formatDni(member.dni) }} | N° Socio: {{ member.member_number || '-' }}
+              </h6>
+              
+              <div class="mt-3">
+                <a class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" :href="`#details-mobile-${member.id}`" role="button">
+                  Ver más
+                </a>
+              </div>
+              <div class="collapse mt-2" :id="`details-mobile-${member.id}`">
+                <ul class="list-group list-group-flush">
+                  <li class="list-group-item px-0"><strong>Tipo:</strong> {{ member.member_type || 'N/A' }}</li>
+                  <li class="list-group-item px-0"><strong>Email:</strong> {{ member.email || '-' }}</li>
+                  <li class="list-group-item px-0"><strong>Teléfono:</strong> {{ formatPhoneNumber(member.phone) || '-' }}</li>
+                </ul>
+              </div>
+            </div>
+            <div class="card-footer bg-transparent d-flex justify-content-end align-items-center flex-wrap gap-2">
+              <button v-if="canManagePayments" @click="viewPayments(member)" class="btn btn-info btn-sm">Estado de Cuenta</button>
+              <button v-if="canManageActivities" @click="manageActivities(member)" class="btn btn-secondary btn-sm">Actividades</button>
+              <div v-if="isAdmin" class="dropdown">
+                <button class="btn btn-primary btn-sm dropdown-toggle" type="button" :id="`dropdownMenuButton-mobile-${member.id}`" data-bs-toggle="dropdown" aria-expanded="false">
+                  Más
+                </button>
+                <ul class="dropdown-menu" :aria-labelledby="`dropdownMenuButton-mobile-${member.id}`">
+                  <li><a class="dropdown-item" href="#" @click.prevent="startEditing(member)">Editar</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item text-danger" href="#" @click.prevent="handleDelete(member.id)">Borrar</a></li>
+                </ul>
+              </div>
+            </div>
+          </template>
+          
+          <!-- Edit Mode -->
+          <template v-else>
+            <div class="card-body">
+              <h5 class="card-title">Editando Socio</h5>
+              <div class="mb-2">
+                <label class="form-label">Apellido</label>
+                <input type="text" v-model="editFormData.last_name" class="form-control form-control-sm" required>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Nombre</label>
+                <input type="text" v-model="editFormData.first_name" class="form-control form-control-sm" required>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">DNI</label>
+                <input type="text" v-model="editFormData.dni" class="form-control form-control-sm">
+              </div>
+              <div class="mb-2">
+                <label class="form-label">N° Socio</label>
+                <input type="text" v-model="editFormData.member_number" class="form-control form-control-sm">
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Tipo Socio</label>
+                <select class="form-select form-select-sm" v-model="editFormData.member_type">
+                  <option>N/A</option>
+                  <option>Adherente</option>
+                  <option>Deportivo</option>
+                </select>
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Email</label>
+                <input type="email" v-model="editFormData.email" class="form-control form-control-sm">
+              </div>
+              <div class="mb-2">
+                <label class="form-label">Teléfono</label>
+                <input type="tel" v-model="editFormData.phone" class="form-control form-control-sm">
+              </div>
+            </div>
+            <div class="card-footer bg-transparent d-flex justify-content-end gap-2">
+              <button @click="handleUpdate(member.id)" class="btn btn-success btn-sm">Guardar</button>
+              <button @click="cancelEditing" class="btn btn-secondary btn-sm">Cancelar</button>
+            </div>
+          </template>
+        </div>
       </div>
     </div>
     <div class="card-footer d-flex justify-content-between align-items-center">

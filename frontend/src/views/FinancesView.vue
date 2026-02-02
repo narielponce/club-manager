@@ -241,12 +241,12 @@ onMounted(() => {
 
 <template>
   <div>
-    <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1>Finanzas del Club</h1>
-      <div>
-        <button v-if="isFinanceAdmin || isProfessor" class="btn btn-success me-2" @click="showAddManualChargeModal = true">Generar Cargo Manual</button>
+    <div class="d-flex flex-column flex-md-row justify-content-md-between align-items-md-center mb-4">
+      <h1 class="mb-3 mb-md-0">Finanzas del Club</h1>
+      <div class="d-grid gap-2 d-md-flex">
+        <button v-if="isFinanceAdmin || isProfessor" class="btn btn-success" @click="showAddManualChargeModal = true">Generar Cargo Manual</button>
         <template v-if="isFinanceAdmin">
-          <button class="btn btn-primary me-2" @click="isTransactionModalVisible = true">Registrar Transacción</button>
+          <button class="btn btn-primary" @click="isTransactionModalVisible = true">Registrar Transacción</button>
           <button class="btn btn-info" @click="isDebtModalVisible = true">Generar Deuda Mensual</button>
         </template>
       </div>
@@ -317,7 +317,8 @@ onMounted(() => {
           <div v-if="transactionsLoading" class="alert alert-info">Cargando transacciones...</div>
           <div v-if="transactionsError" class="alert alert-danger">{{ transactionsError }}</div>
           <div v-if="!transactionsLoading && !transactionsError">
-            <div class="table-responsive">
+            <!-- Desktop view: Table -->
+            <div class="table-responsive d-none d-lg-block">
               <table class="table table-striped table-hover align-middle">
                 <thead>
                   <tr>
@@ -346,8 +347,38 @@ onMounted(() => {
                 </tbody>
               </table>
             </div>
+
+            <!-- Mobile view: Cards -->
+            <div class="d-block d-lg-none">
+              <div v-if="transactions.length === 0" class="text-center text-muted">
+                No hay transacciones registradas.
+              </div>
+              <div v-for="transaction in transactions" :key="`mobile-${transaction.id}`" class="card mb-2">
+                <div class="card-body">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <span class="fw-bold">{{ transaction.description }}</span>
+                    <span class="fw-bold" :class="transaction.type === 'income' ? 'text-success' : 'text-danger'">
+                      {{ formatCurrency(transaction.amount) }}
+                    </span>
+                  </div>
+                  <div class="text-muted small mt-1">
+                    {{ formatDate(transaction.transaction_date) }} | {{ getCategoryName(transaction.category_id) }}
+                  </div>
+                  <div class="d-flex justify-content-between align-items-end text-muted small mt-1">
+                    <span>Forma de Pago: {{ transaction.payment_method }}</span>
+                    <span :class="transaction.type === 'income' ? 'badge bg-success' : 'badge bg-danger'">
+                        {{ getCategoryTypeLabel(transaction.type) }}
+                    </span>
+                  </div>
+                  <div class="mt-2" v-if="transaction.receipt_url">
+                    <a :href="`/${transaction.receipt_url}`" target="_blank" class="btn btn-outline-secondary btn-sm">Ver Comprobante</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Pagination Controls -->
-            <nav v-if="totalPages > 1" aria-label="Page navigation">
+            <nav v-if="totalPages > 1" aria-label="Page navigation" class="mt-4">
               <ul class="pagination justify-content-center">
                 <li class="page-item" :class="{ disabled: currentPage === 1 }">
                   <a class="page-link" href="#" @click.prevent="handlePageChange(currentPage - 1)">Anterior</a>
