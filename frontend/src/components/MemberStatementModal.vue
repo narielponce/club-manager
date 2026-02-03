@@ -123,61 +123,113 @@ const formatDate = (dateString) => {
           <div v-if="error" class="alert alert-danger">{{ error }}</div>
           
           <div v-if="!isLoading && !error && statement">
-            <table class="table table-sm table-hover align-middle">
-              <thead>
-                <tr>
-                  <th>Fecha</th>
-                  <th>Concepto</th>
-                  <th class="text-end">Importe</th>
-                  <th class="text-end">Saldo</th>
-                  <th>Estado Deuda</th>
-                  <th class="text-end">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="(item, index) in statement.items" :key="index">
-                  <td>{{ formatDate(item.transaction_date) }}</td>
-                  <td>{{ item.concept }}</td>
-                  <td class="text-end" :class="item.amount < 0 ? 'text-success' : 'text-danger'">
-                    {{ formatCurrency(item.amount) }}
-                  </td>
-                  <td class="text-end fw-bold">{{ formatCurrency(item.balance) }}</td>
-                  
-                  <!-- Status and Action only for DEBT rows -->
-                  <template v-if="item.transaction_type === 'debt'">
-                    <td>
-                      <span class="badge" :class="getDebtStatus(item).class">
-                        {{ getDebtStatus(item).text }}
-                      </span>
+            <!-- Desktop View: Table -->
+            <div class="table-responsive d-none d-lg-block">
+              <table class="table table-sm table-hover align-middle">
+                <thead>
+                  <tr>
+                    <th>Fecha</th>
+                    <th>Concepto</th>
+                    <th class="text-end">Importe</th>
+                    <th class="text-end">Saldo</th>
+                    <th>Estado Deuda</th>
+                    <th class="text-end">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(item, index) in statement.items" :key="index">
+                    <td>{{ formatDate(item.transaction_date) }}</td>
+                    <td>{{ item.concept }}</td>
+                    <td class="text-end" :class="item.amount < 0 ? 'text-success' : 'text-danger'">
+                      {{ formatCurrency(item.amount) }}
                     </td>
-                    <td class="text-end">
-                      <button 
-                        v-if="getDebtStatus(item).text !== 'Pagado'"
-                        @click="openImputePaymentModal(item.debt_id)"
-                        class="btn btn-success btn-sm"
-                      >
-                        Imputar Pago
-                      </button>
-                    </td>
-                  </template>
-                  <!-- Empty cells for PAYMENT rows -->
-                  <template v-else>
-                    <td></td>
-                    <td></td>
-                  </template>
-                </tr>
-                <tr v-if="!statement.items || statement.items.length === 0">
-                  <td colspan="6" class="text-center text-muted">No hay movimientos en la cuenta.</td>
-                </tr>
-              </tbody>
-              <tfoot>
-                <tr class="border-top-2">
-                  <td colspan="3" class="text-end fw-bold">Saldo Final:</td>
-                  <td class="text-end fw-bolder fs-5">{{ formatCurrency(statement.final_balance) }}</td>
-                  <td colspan="2"></td>
-                </tr>
-              </tfoot>
-            </table>
+                    <td class="text-end fw-bold">{{ formatCurrency(item.balance) }}</td>
+                    
+                    <!-- Status and Action only for DEBT rows -->
+                    <template v-if="item.transaction_type === 'debt'">
+                      <td>
+                        <span class="badge" :class="getDebtStatus(item).class">
+                          {{ getDebtStatus(item).text }}
+                        </span>
+                      </td>
+                      <td class="text-end">
+                        <button 
+                          v-if="getDebtStatus(item).text !== 'Pagado'"
+                          @click="openImputePaymentModal(item.debt_id)"
+                          class="btn btn-success btn-sm"
+                        >
+                          Imputar Pago
+                        </button>
+                      </td>
+                    </template>
+                    <!-- Empty cells for PAYMENT rows -->
+                    <template v-else>
+                      <td></td>
+                      <td></td>
+                    </template>
+                  </tr>
+                  <tr v-if="!statement.items || statement.items.length === 0">
+                    <td colspan="6" class="text-center text-muted">No hay movimientos en la cuenta.</td>
+                  </tr>
+                </tbody>
+                <tfoot>
+                  <tr class="border-top-2">
+                    <td colspan="3" class="text-end fw-bold">Saldo Final:</td>
+                    <td class="text-end fw-bolder fs-5">{{ formatCurrency(statement.final_balance) }}</td>
+                    <td colspan="2"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            <!-- Mobile View: Cards -->
+            <div class="d-block d-lg-none">
+              <div v-if="!statement.items || statement.items.length === 0" class="text-center text-muted">
+                  No hay movimientos en la cuenta.
+              </div>
+              <div v-else>
+                <div v-for="(item, index) in statement.items" :key="`mobile-${index}`" class="card mb-2">
+                    <div class="card-body pb-2">
+                        <!-- Main Info -->
+                        <div class="d-flex justify-content-between align-items-start">
+                            <span class="fw-bold">{{ item.concept }}</span>
+                            <span class="fw-bold" :class="item.amount < 0 ? 'text-success' : 'text-danger'">
+                                {{ formatCurrency(item.amount) }}
+                            </span>
+                        </div>
+                        <!-- Sub Info -->
+                        <div class="d-flex justify-content-between text-muted small mt-1">
+                            <span>{{ formatDate(item.transaction_date) }}</span>
+                            <span>Saldo: {{ formatCurrency(item.balance) }}</span>
+                        </div>
+
+                        <!-- Debt-specific info -->
+                        <template v-if="item.transaction_type === 'debt'">
+                            <hr class="my-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="badge" :class="getDebtStatus(item).class">
+                                        {{ getDebtStatus(item).text }}
+                                    </span>
+                                </div>
+                                <button 
+                                    v-if="getDebtStatus(item).text !== 'Pagado'"
+                                    @click="openImputePaymentModal(item.debt_id)"
+                                    class="btn btn-success btn-sm"
+                                >
+                                    Imputar Pago
+                                </button>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                <!-- Footer with final balance -->
+                <div class="d-flex justify-content-end fw-bold fs-5 p-3 mt-3 border-top">
+                    <span class="me-2">Saldo Final:</span>
+                    <span>{{ formatCurrency(statement.final_balance) }}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
