@@ -93,8 +93,10 @@ const handleDelete = async (memberId) => {
     const handleUpdate = async (memberId) => {
       try {
         const payload = { ...editFormData }
+        // Allow empty strings to be sent to the backend to clear optional fields.
+        // Only remove properties that are strictly null.
         for (const key in payload) {
-          if (payload[key] === '' || payload[key] === null) {
+          if (payload[key] === null) {
             delete payload[key]
           }
         }
