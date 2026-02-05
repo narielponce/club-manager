@@ -30,8 +30,14 @@ export async function updateClub(clubId, clubData) {
   });
 }
 
-export async function deleteClub(clubId) {
+export async function deactivateClub(clubId) {
   return apiFetch(`/superadmin/clubs/${clubId}`, {
+    method: 'DELETE',
+  });
+}
+
+export async function permanentlyDeleteClub(clubId) {
+  return apiFetch(`/superadmin/clubs/${clubId}/permanent`, {
     method: 'DELETE',
   });
 }

@@ -1,15 +1,18 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
-import { getClubs, deleteClub, updateClub } from '../services/superadmin.js';
+import { getClubs, deactivateClub, permanentlyDeleteClub, updateClub } from '../services/superadmin.js';
 import EditClubModal from '../components/EditClubModal.vue';
+import DeleteClubConfirmationModal from '../components/DeleteClubConfirmationModal.vue';
 
 const clubs = ref([]);
 const isLoading = ref(true);
 const error = ref(null);
 
 const isEditModalVisible = ref(false);
+const isDeleteModalVisible = ref(false);
 const selectedClub = ref(null);
+const clubToDelete = ref(null);
 
 const fetchData = async () => {
   try {
@@ -23,12 +26,12 @@ const fetchData = async () => {
   }
 };
 
-const handleDelete = async (clubId) => {
+const handleDeactivate = async (clubId) => {
   if (!confirm('¿Estás seguro de que quieres desactivar este club?')) {
     return;
   }
   try {
-    await deleteClub(clubId);
+    await deactivateClub(clubId);
     fetchData(); // Refresh the list
   } catch (e) {
     alert('Error al desactivar el club: ' + e.message);
@@ -57,6 +60,23 @@ const handleClubUpdated = () => {
   fetchData();
 }
 
+const openDeleteModal = (club) => {
+  clubToDelete.value = club;
+  isDeleteModalVisible.value = true;
+}
+
+const handlePermanentDelete = async () => {
+  if (!clubToDelete.value) return;
+  try {
+    await permanentlyDeleteClub(clubToDelete.value.id);
+    isDeleteModalVisible.value = false;
+    clubToDelete.value = null;
+    fetchData();
+  } catch (e) {
+    alert('Error al eliminar el club: ' + e.message);
+  }
+}
+
 onMounted(fetchData);
 </script>
 
@@ -75,34 +95,37 @@ onMounted(fetchData);
         <h3>Clubes Registrados</h3>
       </div>
       <div class="card-body">
-        <table class="table table-striped table-hover align-middle">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Nombre del Club</th>
-              <th>Cuota Base</th>
-              <th>Estado</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="club in clubs" :key="club.id" :class="{ 'text-muted bg-light': !club.is_active }">
-              <td>{{ club.id }}</td>
-              <td>{{ club.name }}</td>
-              <td>{{ club.base_fee ? `$${club.base_fee}` : 'No asignada' }}</td>
-              <td>
-                <span :class="club.is_active ? 'text-success' : 'text-danger'">
-                  <strong>{{ club.is_active ? 'Activo' : 'Inactivo' }}</strong>
-                </span>
-              </td>
-              <td class="text-end">
-                <button @click="handleEdit(club)" class="btn btn-secondary btn-sm me-2">Editar</button>
-                <button v-if="club.is_active" @click="handleDelete(club.id)" class="btn btn-warning btn-sm">Desactivar</button>
-                <button v-else @click="handleReactivate(club.id)" class="btn btn-success btn-sm">Reactivar</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-striped table-hover align-middle">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Nombre del Club</th>
+                <th>Cuota Base</th>
+                <th>Estado</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="club in clubs" :key="club.id" :class="{ 'text-muted': !club.is_active }">
+                <td>{{ club.id }}</td>
+                <td>{{ club.name }}</td>
+                <td>{{ club.base_fee ? `$${club.base_fee}` : 'No asignada' }}</td>
+                <td>
+                  <span :class="club.is_active ? 'text-success' : 'text-danger'">
+                    <strong>{{ club.is_active ? 'Activo' : 'Inactivo' }}</strong>
+                  </span>
+                </td>
+                <td class="text-end">
+                  <button @click="handleEdit(club)" class="btn btn-secondary btn-sm me-2">Editar</button>
+                  <button v-if="club.is_active" @click="handleDeactivate(club.id)" class="btn btn-warning btn-sm me-2">Desactivar</button>
+                  <button v-else @click="handleReactivate(club.id)" class="btn btn-success btn-sm me-2">Reactivar</button>
+                  <button @click="openDeleteModal(club)" class="btn btn-danger btn-sm">Eliminar</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -112,6 +135,14 @@ onMounted(fetchData);
       :club="selectedClub"
       @close="isEditModalVisible = false"
       @club-updated="handleClubUpdated"
+    />
+
+    <DeleteClubConfirmationModal
+      v-if="isDeleteModalVisible"
+      :show="isDeleteModalVisible"
+      :club-name="clubToDelete?.name || ''"
+      @close="isDeleteModalVisible = false; clubToDelete = null;"
+      @confirm-delete="handlePermanentDelete"
     />
   </div>
 </template>

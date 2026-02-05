@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -63,6 +63,48 @@ def deactivate_club_by_superadmin(
     db.add(db_club)
     db.commit()
     return
+
+
+@router.delete("/clubs/{club_id}/permanent", status_code=status.HTTP_204_NO_CONTENT)
+def permanently_delete_club(
+    club_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_superadmin_user)
+):
+    """
+    Permanently delete a club and all of its associated data. This is an
+    irreversible action.
+    """
+    club = db.query(models.Club).filter(models.Club.id == club_id).first()
+    if not club:
+        return
+
+    # Subqueries for efficiency
+    member_ids_subquery = db.query(models.Member.id).filter(models.Member.club_id == club_id).subquery()
+    debt_ids_subquery = db.query(models.Debt.id).filter(models.Debt.member_id.in_(member_ids_subquery)).subquery()
+
+    # Delete related entities in order of dependency
+    db.query(models.ClubTransaction).filter(models.ClubTransaction.club_id == club_id).delete(synchronize_session=False)
+    db.query(models.Payment).filter(models.Payment.debt_id.in_(debt_ids_subquery)).delete(synchronize_session=False)
+    db.query(models.DebtItem).filter(models.DebtItem.debt_id.in_(debt_ids_subquery)).delete(synchronize_session=False)
+    db.query(models.Debt).filter(models.Debt.member_id.in_(member_ids_subquery)).delete(synchronize_session=False)
+
+    members_to_clear = db.query(models.Member).filter(models.Member.id.in_(member_ids_subquery)).all()
+    for member in members_to_clear:
+        member.activities.clear()
+    
+    db.commit() # Commit association changes before deleting members
+
+    db.query(models.Member).filter(models.Member.id.in_(member_ids_subquery)).delete(synchronize_session=False)
+    db.query(models.Activity).filter(models.Activity.club_id == club_id).delete(synchronize_session=False)
+    db.query(models.Category).filter(models.Category.club_id == club_id).delete(synchronize_session=False)
+    db.query(models.User).filter(models.User.club_id == club_id).delete(synchronize_session=False)
+
+    db.delete(club)
+    db.commit()
+
+    return
+
 
 @router.get("/clubs/{club_id}/users", response_model=List[schemas.User])
 def get_users_for_club_by_superadmin(
