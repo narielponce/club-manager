@@ -7,6 +7,7 @@ import SettingsView from '../views/SettingsView.vue'
 import SuperadminLoginView from '../views/SuperadminLoginView.vue'
 import CreateClubView from '../views/CreateClubView.vue'
 import SuperadminDashboardView from '../views/SuperadminDashboardView.vue'
+import ClubAdminsView from '../views/ClubAdminsView.vue'
 import FinancesView from '../views/FinancesView.vue'
 import ReportsView from '../views/ReportsView.vue'
 import IncomeVsExpensesView from '../views/IncomeVsExpensesView.vue'
@@ -122,6 +123,20 @@ const router = createRouter({
       name: 'create-club',
       component: CreateClubView,
       meta: { requiresAuth: true }, // Use the main app layout
+      beforeEnter: (to, from, next) => {
+        if (accessToken.value) {
+          next();
+        } else {
+          next('/superadmin/login');
+        }
+      }
+    },
+    {
+      path: '/superadmin/clubs/:id/admins',
+      name: 'superadmin-club-admins',
+      component: ClubAdminsView,
+      props: true,
+      meta: { requiresAuth: true },
       beforeEnter: (to, from, next) => {
         if (accessToken.value) {
           next();

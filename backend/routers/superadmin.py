@@ -1,6 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, File, UploadFile
 from sqlalchemy.orm import Session
 from typing import List
+import os
+import uuid
 
 from .. import models, schemas, security
 from ..database import get_db
@@ -106,6 +108,53 @@ def permanently_delete_club(
     return
 
 
+@router.post("/clubs/{club_id}/logo", response_model=schemas.Club)
+async def upload_club_logo(
+    club_id: int,
+    logo: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_superadmin_user)
+):
+    """
+    Upload or update a club's logo.
+    """
+    db_club = db.query(models.Club).filter(models.Club.id == club_id).first()
+    if not db_club:
+        raise HTTPException(status_code=404, detail="Club not found")
+
+    # If there's an old logo, delete it from the filesystem
+    if db_club.logo_url and os.path.exists(db_club.logo_url):
+        try:
+            os.remove(db_club.logo_url)
+        except OSError:
+            # Log this error if a logging system is in place
+            pass
+
+    UPLOAD_DIR = "uploads/logos"
+    try:
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create upload directory: {e}")
+
+    file_extension = os.path.splitext(logo.filename)[1]
+    unique_filename = f"{uuid.uuid4()}{file_extension}"
+    file_path = os.path.join(UPLOAD_DIR, unique_filename)
+
+    try:
+        with open(file_path, "wb") as buffer:
+            buffer.write(await logo.read())
+        logo_url = file_path
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to write file: {e}")
+
+    db_club.logo_url = logo_url
+    db.add(db_club)
+    db.commit()
+    db.refresh(db_club)
+
+    return db_club
+
+
 @router.get("/clubs/{club_id}/users", response_model=List[schemas.User])
 def get_users_for_club_by_superadmin(
     club_id: int,
@@ -119,6 +168,28 @@ def get_users_for_club_by_superadmin(
         raise HTTPException(status_code=404, detail="Club not found")
     
     return db.query(models.User).filter(models.User.club_id == club_id).all()
+
+
+@router.get("/clubs/{club_id}/admins", response_model=List[schemas.User])
+def get_admin_users_for_club(
+    club_id: int,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(security.get_current_superadmin_user)
+):
+    """
+    Get all users with the 'admin' role for a specific club.
+    """
+    db_club = db.query(models.Club).filter(models.Club.id == club_id).first()
+    if not db_club:
+        raise HTTPException(status_code=404, detail="Club not found")
+    
+    admins = db.query(models.User).filter(
+        models.User.club_id == club_id,
+        models.User.role == 'admin'
+    ).all()
+    
+    return admins
+
 
 @router.put("/users/{user_id}", response_model=schemas.User)
 def update_user_by_superadmin(

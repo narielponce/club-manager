@@ -103,6 +103,7 @@ onMounted(fetchData);
                 <th>Nombre del Club</th>
                 <th>Cuota Base</th>
                 <th>Estado</th>
+                <th>Administradores</th>
                 <th class="text-end">Acciones</th>
               </tr>
             </thead>
@@ -113,13 +114,17 @@ onMounted(fetchData);
                 <td>{{ club.base_fee ? `$${club.base_fee}` : 'No asignada' }}</td>
                 <td>
                   <span :class="club.is_active ? 'text-success' : 'text-danger'">
-                    <strong>{{ club.is_active ? 'Activo' : 'Inactivo' }}</strong>
-                  </span>
-                </td>
-                <td class="text-end">
-                  <button @click="handleEdit(club)" class="btn btn-secondary btn-sm me-2">Editar</button>
-                  <button v-if="club.is_active" @click="handleDeactivate(club.id)" class="btn btn-warning btn-sm me-2">Desactivar</button>
-                  <button v-else @click="handleReactivate(club.id)" class="btn btn-success btn-sm me-2">Reactivar</button>
+                                      <strong>{{ club.is_active ? 'Activo' : 'Inactivo' }}</strong>
+                                    </span>
+                                  </td>
+                                  <td>
+                                    <RouterLink :to="{ name: 'superadmin-club-admins', params: { id: club.id } }" class="btn btn-info btn-sm">
+                                      Gestionar
+                                    </RouterLink>
+                                  </td>
+                                  <td class="text-end">
+                                    <button @click="handleEdit(club)" class="btn btn-secondary btn-sm me-2">Editar</button>
+                                    <button v-if="club.is_active" @click="handleDeactivate(club.id)" class="btn btn-warning btn-sm me-2">Desactivar</button>                  <button v-else @click="handleReactivate(club.id)" class="btn btn-success btn-sm me-2">Reactivar</button>
                   <button @click="openDeleteModal(club)" class="btn btn-danger btn-sm">Eliminar</button>
                 </td>
               </tr>

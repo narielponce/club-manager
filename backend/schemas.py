@@ -108,6 +108,8 @@ class SuperadminClubUpdate(BaseModel):
     name: Optional[str] = None
     base_fee: Optional[float] = None
     is_active: Optional[bool] = None
+    logo_url: Optional[str] = None
+    email_domain: Optional[str] = None
 
 class Club(BaseModel):
     id: int

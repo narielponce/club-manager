@@ -41,3 +41,17 @@ export async function permanentlyDeleteClub(clubId) {
     method: 'DELETE',
   });
 }
+
+export async function uploadClubLogo(clubId, logoFile) {
+  const formData = new FormData();
+  formData.append('logo', logoFile);
+
+  return apiFetch(`/superadmin/clubs/${clubId}/logo`, {
+    method: 'POST',
+    body: formData,
+  });
+}
+
+export async function getClubAdmins(clubId) {
+  return apiFetch(`/superadmin/clubs/${clubId}/admins`);
+}
