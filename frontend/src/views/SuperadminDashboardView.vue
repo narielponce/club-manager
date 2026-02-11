@@ -103,6 +103,7 @@ onMounted(fetchData);
                 <th>Nombre del Club</th>
                 <th>Cuota Base</th>
                 <th>Estado</th>
+                <th>Socios Activos</th>
                 <th>Administradores</th>
                 <th class="text-end">Acciones</th>
               </tr>
@@ -117,6 +118,7 @@ onMounted(fetchData);
                                       <strong>{{ club.is_active ? 'Activo' : 'Inactivo' }}</strong>
                                     </span>
                                   </td>
+                <td>{{ club.member_count }}</td>
                                   <td>
                                     <RouterLink :to="{ name: 'superadmin-club-admins', params: { id: club.id } }" class="btn btn-info btn-sm">
                                       Gestionar

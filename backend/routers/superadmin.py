@@ -7,24 +7,43 @@ import uuid
 from .. import models, schemas, security
 from ..database import get_db
 
+from sqlalchemy import func
+
 router = APIRouter(
     prefix="/superadmin",
     tags=["superadmin"],
     dependencies=[Depends(security.get_current_superadmin_user)],
 )
 
-@router.get("/clubs/", response_model=List[schemas.Club])
+@router.get("/clubs/", response_model=List[schemas.ClubWithMemberCount])
 def get_all_clubs(
     include_inactive: bool = False,
     db: Session = Depends(get_db)
 ):
     """
-    Get all clubs. By default, only active clubs are returned.
+    Get all clubs with their active member count.
+    By default, only active clubs are returned.
     """
-    query = db.query(models.Club)
+    query = db.query(
+        models.Club,
+        func.count(models.Member.id).label("member_count")
+    ).outerjoin(models.Member, (models.Member.club_id == models.Club.id) & (models.Member.is_active == True))
+    
     if not include_inactive:
         query = query.filter(models.Club.is_active == True)
-    return query.order_by(models.Club.name).all()
+    
+    query = query.group_by(models.Club.id).order_by(models.Club.name)
+    
+    results = query.all()
+
+    # Manually construct the response to match the Pydantic model
+    clubs_with_counts = []
+    for club, member_count in results:
+        club_data = schemas.Club.from_orm(club).model_dump()
+        club_data['member_count'] = member_count
+        clubs_with_counts.append(schemas.ClubWithMemberCount(**club_data))
+
+    return clubs_with_counts
 
 @router.put("/clubs/{club_id}", response_model=schemas.Club)
 def update_club_by_superadmin(

@@ -121,6 +121,9 @@ class Club(BaseModel):
     class Config:
         from_attributes = True
 
+class ClubWithMemberCount(Club):
+    member_count: int
+
 class User(UserBase):
     id: int
     is_active: bool
