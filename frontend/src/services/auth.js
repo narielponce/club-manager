@@ -79,6 +79,12 @@ export function logout() {
 export async function fetchCurrentUser() {
   if (accessToken.value) {
     try {
+      // 1. Pedimos los datos al servidor
+      const data = await apiFetch('/users/me');
+
+      // 2. Imprimimos en la consola para ver qué dice el servidor REALMENTE
+      console.log("🔍 REVISIÓN DE SEGURIDAD - Datos del servidor:", data);
+      
       // The endpoint will change in the new backend
       currentUser.value = await apiFetch('/users/me'); 
     } catch (error) {
