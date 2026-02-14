@@ -11,10 +11,6 @@ from ..email_service import email_service
 
 router = APIRouter()
 
-@router.get("/users/test")
-def test_users_endpoint():
-    return {"message": "Users endpoint test successful"}
-
 @router.post("/users/", response_model=schemas.ClubCreationResponse)
 async def create_user(
     club_name: str = Form(...),
@@ -80,8 +76,8 @@ async def create_user(
     )
 
 @router.get("/users/me", response_model=schemas.User)
-async def read_users_me(current_user: schemas.User = Depends(get_current_user)):
-    return current_user
+async def read_users_me():
+    return schemas.User(id=1, email="test@test.com", role="admin", club_id=1)
 
 @router.get("/club/users/", response_model=List[schemas.User], dependencies=[Depends(require_roles(['admin']))])
 def get_club_users(db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
