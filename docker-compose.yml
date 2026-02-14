@@ -1,28 +1,26 @@
 # version: '3.8'
 
 services:
-  proxy:
+  club_proxy:
     image: nginx:stable-alpine
-    container_name: personal_expense_manager_proxy
+    container_name: club_manager_proxy
     ports:
       - "${PROXY_PORT:-80}:80"
       - "443:443"
     volumes:
       - ./nginx.proxy.conf:/etc/nginx/conf.d/default.conf
-      # No landing page or uploads from the old project
-      # - ./frontend/landing:/usr/share/nginx/html/landing
-      # - ./uploads:/usr/share/nginx/html/uploads
       - /var/www/certbot:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
-      - backend
-      - frontend
+      - club_backend
+      - club_frontend
     restart: unless-stopped
 
-  db:
+  club_db:
     image: postgres:15-alpine
-    container_name: personal_expense_manager_db
+    container_name: club_manager_db
     volumes:
+      # Mantenemos 'postgres_data' para no perder tus datos actuales
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - .env
@@ -33,36 +31,35 @@ services:
       retries: 5
     restart: unless-stopped
 
-  backend:
+  club_backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: personal_expense_manager_backend
-    # No uploads directory for the new project (personal expenses don't have public uploads)
-    # - ./uploads:/code/uploads
+    container_name: club_manager_backend
     volumes:
       - ./backend:/code/backend
       - ./.env:/code/.env
     depends_on:
-      db:
+      club_db:
         condition: service_healthy
     env_file:
       - .env
     restart: unless-stopped
 
-  frontend:
+  club_frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    container_name: personal_expense_manager_frontend
+    container_name: club_manager_frontend
     restart: unless-stopped
 
-  certbot:
+  club_certbot:
     image: certbot/certbot
-    container_name: personal_expense_manager_certbot
+    container_name: club_manager_certbot
     volumes:
       - /var/www/certbot:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt
 
 volumes:
+  # Este es el nombre del volumen físico en tu Droplet. No lo cambies.
   postgres_data:
