@@ -58,7 +58,7 @@ async def lifespan(app: FastAPI):
     print("INFO:     Application shutdown.")
 
 # --- App Initialization ---
-app = FastAPI(lifespan=lifespan, root_path="/api")
+app = FastAPI(lifespan=lifespan)
 
 # --- Static Files ---
 # No uploads directory for this project
