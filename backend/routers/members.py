@@ -5,7 +5,7 @@ from typing import List, Optional
 
 from .. import models, schemas
 from ..database import get_db
-from ..security import get_current_user, get_current_admin_user, require_roles
+from ..security import get_current_user, require_roles
 
 router = APIRouter(
     prefix="/members",
@@ -101,7 +101,7 @@ def update_member(member_id: int, member_update: schemas.MemberUpdate, db: Sessi
     db.refresh(db_member)
     return db_member
 
-@router.delete("/{member_id}", status_code=204, dependencies=[Depends(get_current_admin_user)])
+@router.delete("/{member_id}", status_code=204, dependencies=[Depends(require_roles(['admin']))])
 def delete_member(member_id: int, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
     """Soft delete a member, ensuring the member belongs to the current user's club."""
     db_member = db.query(models.Member).filter(
