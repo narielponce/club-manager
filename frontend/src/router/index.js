@@ -4,7 +4,7 @@ import ClientDashboardView from '../views/ClientDashboardView.vue'
 import ForceChangePasswordView from '../views/ForceChangePasswordView.vue'
 import RequestPasswordResetView from '../views/RequestPasswordResetView.vue'
 import ResetPasswordView from '../views/ResetPasswordView.vue'
-import SuperadminDashboardView from '../views/SuperadminDashboardView.vue' // Import SuperadminDashboardView
+import SuperadminDashboardView from '../views/SuperadminDashboardView.vue'
 
 import { accessToken } from '../services/auth.js'
 
@@ -45,21 +45,28 @@ const router = createRouter({
     {
       path: '/superadmin/login',
       name: 'superadmin-login',
-      component: LoginView, // Reuse LoginView for superadmin login
+      component: LoginView,
       meta: { layout: 'LoginLayout' }
     },
     {
       path: '/superadmin/dashboard',
       name: 'superadmin-dashboard',
       component: SuperadminDashboardView,
-      meta: { requiresAuth: true } // Assuming superadmin dashboard requires auth
+      meta: { requiresAuth: true, isSuperadmin: true }
     },
   ]
 })
 
 router.beforeEach((to, from, next) => {
-  if (to.matched.some(record => record.meta.requiresAuth) && !accessToken.value) {
-    next({ name: 'login' })
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const isSuperadminRoute = to.matched.some(record => record.meta.isSuperadmin)
+
+  if (requiresAuth && !accessToken.value) {
+    if (isSuperadminRoute) {
+      next({ name: 'superadmin-login' })
+    } else {
+      next({ name: 'login' })
+    }
   } else {
     next()
   }
