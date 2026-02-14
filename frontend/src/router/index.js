@@ -4,8 +4,8 @@ import ForceChangePasswordView from '../views/ForceChangePasswordView.vue'
 import RequestPasswordResetView from '../views/RequestPasswordResetView.vue'
 import ResetPasswordView from '../views/ResetPasswordView.vue'
 // New views for the Personal Expense Manager
-import ClientDashboardView from '../views/ClientDashboardView.vue' // Placeholder for client dashboard
-import SuperadminClientsView from '../views/SuperadminClientsView.vue' // Placeholder for superadmin client management
+//import ClientDashboardView from '../views/ClientDashboardView.vue' // Placeholder for client dashboard
+//import SuperadminClientsView from '../views/SuperadminClientsView.vue' // Placeholder for superadmin client management
 
 import { accessToken } from '../services/auth.js'
 
