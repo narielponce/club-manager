@@ -11,7 +11,7 @@ import { fetchCurrentUser } from './services/auth.js'
 fetchCurrentUser().then(() => {
   const app = createApp(App)
   
-  // Define global utility functions
+  // Define global utility functions (Currency formatting might be useful here)
   app.config.globalProperties.$formatCurrency = (value) => {
     if (value === null || value === undefined) return '';
     return new Intl.NumberFormat('es-ES', {
@@ -23,4 +23,3 @@ fetchCurrentUser().then(() => {
   app.use(router)
   
   app.mount('#app')})
-

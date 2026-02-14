@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import DefaultLayout from './layouts/DefaultLayout.vue'
 import LoginLayout from './layouts/LoginLayout.vue'
-import SessionExpiredModal from './components/SessionExpiredModal.vue'
+import SessionExpiredModal from './components/SessionExpiredModal.vue' // This component will be created later
 
 const route = useRoute()
 
@@ -24,7 +24,8 @@ const layoutComponent = computed(() => {
   <component :is="layoutComponent">
     <router-view />
   </component>
-  <SessionExpiredModal />
+  <!-- SessionExpiredModal will need to be created/copied or removed if not needed -->
+  <!-- <SessionExpiredModal /> -->
 </template>
 
 <style>

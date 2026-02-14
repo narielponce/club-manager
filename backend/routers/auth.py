@@ -7,6 +7,7 @@ import os
 from .. import schemas, models
 from ..database import get_db
 from ..security import verify_password, create_access_token, create_refresh_token
+# Note: schemas.TokenResponseWithForceChange and schemas.RefreshTokenRequest need to be defined in the new schemas.py
 from ..schemas import TokenResponseWithForceChange, RefreshTokenRequest
 
 

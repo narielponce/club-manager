@@ -1,20 +1,12 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import MembersView from '../views/MembersView.vue'
 import LoginView from '../views/LoginView.vue'
-import ActivitiesView from '../views/ActivitiesView.vue'
-import UsersView from '../views/UsersView.vue'
-import SettingsView from '../views/SettingsView.vue'
-import SuperadminLoginView from '../views/SuperadminLoginView.vue'
-import CreateClubView from '../views/CreateClubView.vue'
-import SuperadminDashboardView from '../views/SuperadminDashboardView.vue'
-import ClubAdminsView from '../views/ClubAdminsView.vue'
-import FinancesView from '../views/FinancesView.vue'
-import ReportsView from '../views/ReportsView.vue'
-import IncomeVsExpensesView from '../views/IncomeVsExpensesView.vue'
-import ProfessorReportView from '../views/ProfessorReportView.vue'
-import ForceChangePasswordView from '../views/ForceChangePasswordView.vue' // Added
-import RequestPasswordResetView from '../views/RequestPasswordResetView.vue' // Added
-import ResetPasswordView from '../views/ResetPasswordView.vue' // Added
+import ForceChangePasswordView from '../views/ForceChangePasswordView.vue'
+import RequestPasswordResetView from '../views/RequestPasswordResetView.vue'
+import ResetPasswordView from '../views/ResetPasswordView.vue'
+// New views for the Personal Expense Manager
+import ClientDashboardView from '../views/ClientDashboardView.vue' // Placeholder for client dashboard
+import SuperadminClientsView from '../views/SuperadminClientsView.vue' // Placeholder for superadmin client management
+
 import { accessToken } from '../services/auth.js'
 
 const router = createRouter({
@@ -22,57 +14,9 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      name: 'members',
-      component: MembersView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/activities',
-      name: 'activities',
-      component: ActivitiesView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/users',
-      name: 'users',
-      component: UsersView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/settings',
-      name: 'settings',
-      component: SettingsView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/finances',
-      name: 'finances',
-      component: FinancesView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/reports',
-      name: 'reports',
-      component: ReportsView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/reports/income-vs-expenses',
-      name: 'income-vs-expenses',
-      component: IncomeVsExpensesView,
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/reports/category-distribution',
-      name: 'category-distribution',
-      component: () => import('../views/CategoryDistributionView.vue'),
-      meta: { requiresAuth: true }
-    },
-    {
-      path: '/reports/my-students',
-      name: 'professor-report',
-      component: ProfessorReportView,
-      meta: { requiresAuth: true }
+      name: 'client-dashboard',
+      component: ClientDashboardView, // Placeholder for client dashboard
+      meta: { requiresAuth: true, layout: 'DefaultLayout' }
     },
     {
       path: '/login',
@@ -102,15 +46,18 @@ const router = createRouter({
     {
       path: '/superadmin/login',
       name: 'superadmin-login',
-      component: SuperadminLoginView,
+      component: LoginView, // Reuse LoginView for superadmin login for now
       meta: { layout: 'LoginLayout' }
     },
     {
-      path: '/superadmin/dashboard',
-      name: 'superadmin-dashboard',
-      component: SuperadminDashboardView,
-      meta: { requiresAuth: true }, // Use the main app layout
+      path: '/superadmin/clients',
+      name: 'superadmin-clients',
+      component: SuperadminClientsView, // Placeholder for superadmin client management
+      meta: { requiresAuth: true, layout: 'DefaultLayout' },
       beforeEnter: (to, from, next) => {
+        // Ensure only superadmins can access this route
+        // This will require fetching user data, which happens in App.vue and auth.js
+        // For now, rely on backend auth, but later a client-side check can be added here
         if (accessToken.value) {
           next();
         } else {
@@ -118,33 +65,6 @@ const router = createRouter({
         }
       }
     },
-    {
-      path: '/superadmin/create-club',
-      name: 'create-club',
-      component: CreateClubView,
-      meta: { requiresAuth: true }, // Use the main app layout
-      beforeEnter: (to, from, next) => {
-        if (accessToken.value) {
-          next();
-        } else {
-          next('/superadmin/login');
-        }
-      }
-    },
-    {
-      path: '/superadmin/clubs/:id/admins',
-      name: 'superadmin-club-admins',
-      component: ClubAdminsView,
-      props: true,
-      meta: { requiresAuth: true },
-      beforeEnter: (to, from, next) => {
-        if (accessToken.value) {
-          next();
-        } else {
-          next('/superadmin/login');
-        }
-      }
-    }
   ]
 })
 

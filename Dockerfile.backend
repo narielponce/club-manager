@@ -22,8 +22,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the entire backend directory into the container
 COPY ./backend ./backend
 
-# Create uploads directory and set permissions
-RUN mkdir -p /code/uploads && chown -R appuser:appgroup /code/uploads
+# No uploads directory for this project
+# RUN mkdir -p /code/uploads && chown -R appuser:appgroup /code/uploads
 
 # Change ownership of the code directory to the new user
 RUN chown -R appuser:appgroup /code
@@ -37,4 +37,3 @@ EXPOSE 8000
 # Command to run the application as a module
 # This ensures that relative imports work correctly
 CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
-

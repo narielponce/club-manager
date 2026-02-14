@@ -9,13 +9,15 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 
+# Note: In the new project, models and schemas will be for the Personal Expense Manager.
+# We'll adjust these imports once new models/schemas are defined.
 from . import models, schemas
 from .database import get_db
 
 # --- Configuration ---
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 5
-REFRESH_TOKEN_EXPIRE_MINUTES = 15
+ACCESS_TOKEN_EXPIRE_MINUTES = 30 # Increased for slightly longer sessions for personal use
+REFRESH_TOKEN_EXPIRE_MINUTES = 60 * 24 * 7 # 7 days for refresh token
 
 # --- Password Hashing ---
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")
@@ -95,24 +97,16 @@ async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = De
     return user
 
 
-def get_current_admin_user(current_user: models.User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="The user does not have enough privileges")
-    return current_user
-
-def get_current_finance_user(current_user: models.User = Depends(get_current_user)):
-    """
-    Dependency to ensure the user has finance-related privileges ('admin' or 'tesorero').
-    """
-    if current_user.role not in ["admin", "tesorero"]:
-        raise HTTPException(status_code=403, detail="The user does not have finance privileges")
-    return current_user
-
 def get_current_superadmin_user(current_user: models.User = Depends(get_current_user)):
     if current_user.role != "superadmin":
         raise HTTPException(status_code=403, detail="The user does not have enough privileges")
     return current_user
 
+# Adjusted roles for a personal expense manager SaaS
+def get_current_client_user(current_user: models.User = Depends(get_current_user)):
+    if current_user.role != "client":
+        raise HTTPException(status_code=403, detail="The user does not have client privileges")
+    return current_user
 
 def require_roles(allowed_roles: List[str]):
     def role_checker(current_user: schemas.User = Depends(get_current_user)):

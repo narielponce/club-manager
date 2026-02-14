@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { apiFetch } from './api.js'
-import { currentUser } from './user.js'
+import { currentUser } from './user.js' // This will be the new user service for the expense manager
 import { showSessionModal } from './session.js'
 
 // --- Reactive State ---
@@ -79,7 +79,8 @@ export function logout() {
 export async function fetchCurrentUser() {
   if (accessToken.value) {
     try {
-      currentUser.value = await apiFetch('/users/me');
+      // The endpoint will change in the new backend
+      currentUser.value = await apiFetch('/users/me'); 
     } catch (error) {
       console.error("Failed to fetch user:", error);
       // The 401 handler in apiFetch will now handle the session expiration.

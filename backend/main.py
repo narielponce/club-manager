@@ -1,12 +1,12 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
+# from fastapi.staticfiles import StaticFiles # No static files (uploads) for personal expenses
 import os
 from contextlib import asynccontextmanager
-import locale # Added this import
+import locale
 
 from . import models, database, security
-from .routers import members, auth, users, activities, debts, club, superadmin, categories, transactions, reports, account, admin
+from .routers import auth # Keep auth for now
 
 # --- Lifespan Events ---
 @asynccontextmanager
@@ -22,7 +22,7 @@ async def lifespan(app: FastAPI):
     # The create_all call is now handled by Alembic
     # models.Base.metadata.create_all(bind=database.engine)
 
-    # Create superadmin on first startup
+    # Superadmin creation logic for the SaaS platform
     db = database.SessionLocal()
     superadmin_email = os.getenv("SUPERADMIN_EMAIL")
     superadmin_password = os.getenv("SUPERADMIN_PASSWORD")
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
                 email=superadmin_email,
                 hashed_password=hashed_password,
                 role="superadmin",
-                club_id=None,
+                client_id=None, # Superadmin is not tied to a client
                 force_password_change=False # Explicitly set on creation
             )
             db.add(superadmin_user)
@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
             print(f"INFO:     Superadmin user '{superadmin_email}' created.")
         else:
             print(f"INFO:     Superadmin user '{superadmin_email}' already exists.")
-            # Data correction for existing superadmin from older versions
+            # Data correction for existing superadmin from older versions if needed
             if user.force_password_change is None:
                 print("INFO:     Updating existing superadmin with force_password_change=False.")
                 user.force_password_change = False
@@ -61,10 +61,9 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan, root_path="/api")
 
 # --- Static Files ---
-# Create the uploads directory if it doesn't exist
-# This path needs to be absolute inside the container to avoid ambiguity
-os.makedirs("/code/uploads", exist_ok=True) 
-app.mount("/uploads", StaticFiles(directory="/code/uploads"), name="uploads")
+# No uploads directory for this project
+# os.makedirs("/code/uploads", exist_ok=True) 
+# app.mount("/uploads", StaticFiles(directory="/code/uploads"), name="uploads")
 
 # --- CORS Middleware ---
 origins = [
@@ -88,20 +87,22 @@ app.add_middleware(
 )
 
 # --- API Routers ---
-app.include_router(members.router)
 app.include_router(auth.router)
-app.include_router(users.router)
-app.include_router(activities.router)
-app.include_router(debts.router)
-app.include_router(club.router)
-app.include_router(superadmin.router)
-app.include_router(categories.router)
-app.include_router(transactions.router)
-app.include_router(reports.router)
-app.include_router(account.router) # Added
-app.include_router(admin.router)
+# Remove all business-specific routers from previous project
+# app.include_router(members.router)
+# app.include_router(users.router)
+# app.include_router(activities.router)
+# app.include_router(debts.router)
+# app.include_router(club.router)
+# app.include_router(superadmin.router)
+# app.include_router(categories.router)
+# app.include_router(transactions.router)
+# app.include_router(reports.router)
+# app.include_router(account.router)
+# app.include_router(admin.router)
+
 
 # --- Root Endpoint ---
 @app.get("/")
 def read_root():
-    return {"message": "Welcome to the Club Manager API"}
+    return {"message": "Welcome to the Personal Expense Manager API"}

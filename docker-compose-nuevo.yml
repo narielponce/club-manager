@@ -1,46 +1,50 @@
-# version: '3.8'
+version: '3.8'
 
 services:
   proxy:
     image: nginx:stable-alpine
-    container_name: personal_expense_manager_proxy
+    container_name: club_manager_proxy
     ports:
       - "${PROXY_PORT:-80}:80"
       - "443:443"
     volumes:
+      - ./frontend/landing:/usr/share/nginx/html/landing
       - ./nginx.proxy.conf:/etc/nginx/conf.d/default.conf
-      # No landing page or uploads from the old project
-      # - ./frontend/landing:/usr/share/nginx/html/landing
-      # - ./uploads:/usr/share/nginx/html/uploads
+      - ./nginx/conf.d/finances.raizdigital.com.ar.conf:/etc/nginx/conf.d/finances.raizdigital.com.ar.conf # NUEVO MONTAJE
+      - ./uploads:/usr/share/nginx/html/uploads
       - /var/www/certbot:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt
     depends_on:
       - backend
       - frontend
     restart: unless-stopped
+    networks: # NUEVO
+      - default
+      - web_network # Esta será la red compartida
 
   db:
     image: postgres:15-alpine
-    container_name: personal_expense_manager_db
+    container_name: club_manager_db
     volumes:
       - postgres_data:/var/lib/postgresql/data/
     env_file:
       - .env
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-expenseuser} -d ${POSTGRES_DB:-expensedb}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-clubuser} -d ${POSTGRES_DB:-clubdb}"]
       interval: 5s
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks: # NUEVO
+      - default
 
   backend:
     build:
       context: .
       dockerfile: Dockerfile.backend
-    container_name: personal_expense_manager_backend
-    # No uploads directory for the new project (personal expenses don't have public uploads)
-    # - ./uploads:/code/uploads
+    container_name: club_manager_backend
     volumes:
+      - ./uploads:/code/uploads
       - ./backend:/code/backend
       - ./.env:/code/.env
     depends_on:
@@ -49,20 +53,30 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    networks: # NUEVO
+      - default
 
   frontend:
     build:
       context: .
       dockerfile: Dockerfile.frontend
-    container_name: personal_expense_manager_frontend
+    container_name: club_manager_frontend
     restart: unless-stopped
+    networks: # NUEVO
+      - default
 
   certbot:
     image: certbot/certbot
-    container_name: personal_expense_manager_certbot
+    container_name: club_manager_certbot
     volumes:
       - /var/www/certbot:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt
+    networks: # NUEVO
+      - default
 
 volumes:
   postgres_data:
+
+networks: # NUEVO - Definición de la red compartida
+  web_network:
+    external: true # Indica que esta red ya existe o se creará como externa
