@@ -1,12 +1,13 @@
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { login, fetchCurrentUser } from '../services/auth.js'
 import { showSessionModal } from '../services/session.js'
 
 const email = ref('')
 const password = ref('')
 const router = useRouter()
+const route = useRoute()
 
 const handleSubmit = async () => {
   try {
@@ -15,7 +16,11 @@ const handleSubmit = async () => {
     if (response && response.force_password_change) {
       router.push('/force-change-password') // Redirect to force change password page
     } else {
-      router.push('/') // Redirect to dashboard on success
+      if (route.path.startsWith('/superadmin')) {
+        router.push('/superadmin/dashboard')
+      } else {
+        router.push('/') // Redirect to dashboard on success
+      }
     }
   } catch (err) {
     // Show a modal on login failure

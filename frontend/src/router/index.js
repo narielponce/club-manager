@@ -1,8 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import LoginView from '../views/LoginView.vue'
+import ClientDashboardView from '../views/ClientDashboardView.vue'
 import ForceChangePasswordView from '../views/ForceChangePasswordView.vue'
 import RequestPasswordResetView from '../views/RequestPasswordResetView.vue'
 import ResetPasswordView from '../views/ResetPasswordView.vue'
+import SuperadminDashboardView from '../views/SuperadminDashboardView.vue' // Import SuperadminDashboardView
 
 import { accessToken } from '../services/auth.js'
 
@@ -11,7 +13,9 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/login'
+      name: 'dashboard',
+      component: ClientDashboardView,
+      meta: { requiresAuth: true }
     },
     {
       path: '/login',
@@ -41,8 +45,14 @@ const router = createRouter({
     {
       path: '/superadmin/login',
       name: 'superadmin-login',
-      component: LoginView, // Reuse LoginView for superadmin login for now
+      component: LoginView, // Reuse LoginView for superadmin login
       meta: { layout: 'LoginLayout' }
+    },
+    {
+      path: '/superadmin/dashboard',
+      name: 'superadmin-dashboard',
+      component: SuperadminDashboardView,
+      meta: { requiresAuth: true } // Assuming superadmin dashboard requires auth
     },
   ]
 })
