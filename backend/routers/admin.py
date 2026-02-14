@@ -7,13 +7,13 @@ import zipfile
 import tempfile
 from datetime import datetime
 
-from ..security import get_current_admin_user
+from ..security import require_roles, get_current_user
 from .. import models, database
 
 router = APIRouter(
     prefix="/admin",
     tags=["admin"],
-    dependencies=[Depends(get_current_admin_user)],
+    dependencies=[Depends(require_roles(['admin']))],
 )
 
 # List of models to be exported for a club
@@ -31,7 +31,7 @@ MODELS_TO_EXPORT = [
 
 @router.get("/db-backup-csv")
 async def get_db_backup_csv(
-    current_user: models.User = Depends(get_current_admin_user),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(database.get_db)
 ):
     """

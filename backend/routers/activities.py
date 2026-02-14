@@ -4,7 +4,7 @@ from typing import List
 
 from .. import models, schemas
 from ..database import get_db
-from ..security import get_current_admin_user, require_roles, get_current_user
+from ..security import require_roles, get_current_user
 
 router = APIRouter(
     prefix="/activities",
@@ -19,7 +19,7 @@ def get_activities(db: Session = Depends(get_db), current_user: schemas.User = D
     """
     return db.query(models.Activity).options(selectinload(models.Activity.profesor)).filter(models.Activity.club_id == current_user.club_id).all()
 
-@router.post("/", response_model=schemas.Activity, status_code=201, dependencies=[Depends(get_current_admin_user)])
+@router.post("/", response_model=schemas.Activity, status_code=201, dependencies=[Depends(require_roles(['admin']))])
 def create_activity(activity: schemas.ActivityCreate, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
     """
     Create a new activity for the current user's club (Admin only).
@@ -39,7 +39,7 @@ def create_activity(activity: schemas.ActivityCreate, db: Session = Depends(get_
     db.refresh(db_activity)
     return db_activity
 
-@router.put("/{activity_id}", response_model=schemas.Activity, dependencies=[Depends(get_current_admin_user)])
+@router.put("/{activity_id}", response_model=schemas.Activity, dependencies=[Depends(require_roles(['admin']))])
 def update_activity(activity_id: int, activity_in: schemas.ActivityCreate, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
     """
     Update an activity's details (Admin only).
@@ -70,7 +70,7 @@ def update_activity(activity_id: int, activity_in: schemas.ActivityCreate, db: S
     db.refresh(db_activity)
     return db_activity
 
-@router.delete("/{activity_id}", status_code=204, dependencies=[Depends(get_current_admin_user)])
+@router.delete("/{activity_id}", status_code=204, dependencies=[Depends(require_roles(['admin']))])
 def delete_activity(activity_id: int, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
     """
     Delete an activity (Admin only).

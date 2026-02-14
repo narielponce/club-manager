@@ -6,36 +6,26 @@ import os
 
 from .. import models, schemas, security
 from ..database import get_db
-from ..security import get_current_user, get_current_admin_user, get_password_hash, create_random_string # Added create_random_string
-# from ..email_service import send_email_async # Added
+from ..security import get_current_user, get_password_hash, create_random_string, require_roles
 from ..email_service import email_service
 
 router = APIRouter()
 
-@router.post("/users/", response_model=schemas.ClubCreationResponse) # Changed response_model
+@router.post("/users/", response_model=schemas.ClubCreationResponse)
 async def create_user(
     club_name: str = Form(...),
     email: str = Form(...),
-    recovery_email: str = Form(...), # Changed from password to recovery_email
+    recovery_email: str = Form(...),
     logo: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_superadmin_user),
-    background_tasks: BackgroundTasks = None # Added BackgroundTasks
+    background_tasks: BackgroundTasks = None
 ):
-    # --- DEBUG PRINTS ---
-    print(f"--- DEBUG: Received request to create club '{club_name}'.")
-    print(f"--- DEBUG: Logo object received: {logo}")
-    if logo:
-        print(f"--- DEBUG: Logo filename: {logo.filename}, Content-Type: {logo.content_type}")
-    # --- END DEBUG PRINTS ---
-
-    # Basic email validation
     if '@' not in email or len(email.split('@')[1]) == 0:
         raise HTTPException(status_code=400, detail="Invalid email format for primary email")
     if '@' not in recovery_email or len(recovery_email.split('@')[1]) == 0:
         raise HTTPException(status_code=400, detail="Invalid email format for recovery email")
 
-    # Check if primary email is already registered with an ACTIVE club
     existing_user_by_email = db.query(models.User).join(models.Club).filter(
         models.User.email == email,
         models.Club.is_active == True
@@ -43,7 +33,6 @@ async def create_user(
     if existing_user_by_email:
         raise HTTPException(status_code=400, detail="Primary email already registered with an active club")
 
-    # Extract domain and check if an ACTIVE club with a similar name exists
     email_domain = email.split('@')[1]
     db_club = db.query(models.Club).filter(models.Club.name == club_name, models.Club.is_active == True).first()
     if db_club:
@@ -51,58 +40,35 @@ async def create_user(
 
     logo_url = None
     if logo:
-        print("--- DEBUG: Entering 'if logo:' block to process file.") # DEBUG
         UPLOAD_DIR = "uploads/logos"
-        print(f"--- DEBUG: UPLOAD_DIR resolved to: {UPLOAD_DIR}") # DEBUG
-        
-        try:
-            os.makedirs(UPLOAD_DIR, exist_ok=True)
-            print(f"--- DEBUG: Directory '{UPLOAD_DIR}' ensured.") # DEBUG
-        except Exception as e:
-            print(f"--- DEBUG: Error creating directory: {e}") # DEBUG
-            raise HTTPException(status_code=500, detail=f"Failed to create upload directory: {e}")
-
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
         file_extension = os.path.splitext(logo.filename)[1]
         unique_filename = f"{uuid.uuid4()}{file_extension}"
         file_path = os.path.join(UPLOAD_DIR, unique_filename)
-        print(f"--- DEBUG: Full file_path: {file_path}") # DEBUG
-        
-        try:
-            # Save the file
-            with open(file_path, "wb") as buffer:
-                buffer.write(await logo.read())
-            print(f"--- DEBUG: File '{unique_filename}' written successfully.") # DEBUG
-            logo_url = file_path
-        except Exception as e:
-            print(f"--- DEBUG: Error writing file: {e}") # DEBUG
-            raise HTTPException(status_code=500, detail=f"Failed to write file: {e}")
-    else:
-        print("--- DEBUG: 'if logo:' block was skipped. Logo is None or False.") # DEBUG
+        with open(file_path, "wb") as buffer:
+            buffer.write(await logo.read())
+        logo_url = file_path
 
-    # Create the new club with the extracted domain and logo URL
     new_club = models.Club(name=club_name, email_domain=email_domain, logo_url=logo_url)
     db.add(new_club)
     db.commit()
     db.refresh(new_club)
 
-    # Generate temporary password
     temporary_password = create_random_string()
     hashed_password = get_password_hash(temporary_password)
     
-    # Create the admin user for the new club
     new_user = models.User(
         email=email,
         hashed_password=hashed_password,
         club_id=new_club.id,
-        role="admin",  # Assign 'admin' role
-        recovery_email=recovery_email, # Added recovery email
-        force_password_change=True # Added force password change flag
+        role="admin",
+        recovery_email=recovery_email,
+        force_password_change=True
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
 
-    # Return ClubCreationResponse
     return schemas.ClubCreationResponse(
         club=new_club,
         admin_user=new_user,
@@ -111,62 +77,45 @@ async def create_user(
 
 @router.get("/users/me", response_model=schemas.User)
 async def read_users_me(current_user: schemas.User = Depends(get_current_user)):
-    """
-    Get current logged in user.
-    """
     return current_user
 
-@router.get("/club/users/", response_model=List[schemas.User])
-def get_club_users(db: Session = Depends(get_db), current_admin: schemas.User = Depends(get_current_admin_user)):
-    """
-    Get all users for the admin's club.
-    """
-    return db.query(models.User).filter(models.User.club_id == current_admin.club_id).all()
+@router.get("/club/users/", response_model=List[schemas.User], dependencies=[Depends(require_roles(['admin']))])
+def get_club_users(db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
+    return db.query(models.User).filter(models.User.club_id == current_user.club_id).all()
 
-@router.post("/club/users/", response_model=schemas.User, status_code=201)
-def create_user_by_admin(user_in: schemas.UserCreateByAdmin, db: Session = Depends(get_db), current_admin: schemas.User = Depends(get_current_admin_user)):
-    """
-    Create a new user for the admin's club.
-    The email is constructed from the local part and the club's domain.
-    """
-    # 1. Get the club's domain
-    db_club = db.query(models.Club).filter(models.Club.id == current_admin.club_id).first()
+@router.post("/club/users/", response_model=schemas.User, status_code=201, dependencies=[Depends(require_roles(['admin']))])
+def create_user_by_admin(user_in: schemas.UserCreateByAdmin, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
+    db_club = db.query(models.Club).filter(models.Club.id == current_user.club_id).first()
     if not db_club or not db_club.email_domain:
         raise HTTPException(status_code=400, detail="El dominio del email no está configurado para este club.")
 
-    # 2. Construct the full email
     full_email = f"{user_in.email_local_part}@{db_club.email_domain}"
 
-    # 3. Check if the constructed email already exists
     user_exists = db.query(models.User).filter(
-        models.User.club_id == current_admin.club_id,
+        models.User.club_id == current_user.club_id,
         models.User.email == full_email
     ).first()
     if user_exists:
         raise HTTPException(status_code=400, detail=f"El email '{full_email}' ya está registrado en este club.")
 
-    # 4. Create the new user
     hashed_password = get_password_hash(user_in.password)
     new_user = models.User(
         email=full_email,
         hashed_password=hashed_password,
         role=user_in.role,
-        club_id=current_admin.club_id,
-        recovery_email=user_in.recovery_email # Save the recovery email
+        club_id=current_user.club_id,
+        recovery_email=user_in.recovery_email
     )
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
     return new_user
 
-@router.put("/club/users/{user_id}", response_model=schemas.User)
-def update_user_by_admin(user_id: int, user_in: schemas.UserUpdateByAdmin, db: Session = Depends(get_db), current_admin: schemas.User = Depends(get_current_admin_user)):
-    """
-    Update a user's role or status in the admin's club.
-    """
+@router.put("/club/users/{user_id}", response_model=schemas.User, dependencies=[Depends(require_roles(['admin']))])
+def update_user_by_admin(user_id: int, user_in: schemas.UserUpdateByAdmin, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
     db_user = db.query(models.User).filter(
         models.User.id == user_id,
-        models.User.club_id == current_admin.club_id
+        models.User.club_id == current_user.club_id
     ).first()
 
     if not db_user:
@@ -181,18 +130,14 @@ def update_user_by_admin(user_id: int, user_in: schemas.UserUpdateByAdmin, db: S
     db.refresh(db_user)
     return db_user
 
-@router.delete("/club/users/{user_id}", status_code=204)
-def delete_user_by_admin(user_id: int, db: Session = Depends(get_db), current_admin: schemas.User = Depends(get_current_admin_user)):
-    """
-    Soft delete a user in the admin's club.
-    """
-    # Prevent an admin from deleting themselves
-    if user_id == current_admin.id:
+@router.delete("/club/users/{user_id}", status_code=204, dependencies=[Depends(require_roles(['admin']))])
+def delete_user_by_admin(user_id: int, db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
+    if user_id == current_user.id:
         raise HTTPException(status_code=400, detail="Admin users cannot delete themselves")
 
     db_user = db.query(models.User).filter(
         models.User.id == user_id,
-        models.User.club_id == current_admin.club_id
+        models.User.club_id == current_user.club_id
     ).first()
 
     if db_user:
@@ -201,30 +146,24 @@ def delete_user_by_admin(user_id: int, db: Session = Depends(get_db), current_ad
     
     return
 
-@router.post("/club/users/{user_id}/change-password", status_code=204)
+@router.post("/club/users/{user_id}/change-password", status_code=204, dependencies=[Depends(require_roles(['admin']))])
 def change_user_password_by_admin(
     user_id: int, 
     password_in: schemas.AdminPasswordChange,
     db: Session = Depends(get_db), 
-    current_admin: models.User = Depends(get_current_admin_user)
+    current_user: models.User = Depends(get_current_user)
 ):
-    """
-    Allows an admin to change the password of any user in their own club.
-    It will also force the user to change this password on their next login.
-    """
     db_user = db.query(models.User).filter(
         models.User.id == user_id,
-        models.User.club_id == current_admin.club_id
+        models.User.club_id == current_user.club_id
     ).first()
 
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found in this club")
 
-    # Admins cannot change their own password using this endpoint
-    if user_id == current_admin.id:
+    if user_id == current_user.id:
         raise HTTPException(status_code=400, detail="Admins cannot change their own password via this endpoint. Please use the 'Account' section.")
 
-    # Hash the new password and update the user
     db_user.hashed_password = get_password_hash(password_in.new_password)
     db_user.force_password_change = True
     
