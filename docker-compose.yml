@@ -15,6 +15,9 @@ services:
       - club_backend
       - club_frontend
     restart: unless-stopped
+    networks:
+      - default
+      - expenses_network
 
   club_db:
     image: postgres:15-alpine
@@ -63,3 +66,7 @@ services:
 volumes:
   # Este es el nombre del volumen físico en tu Droplet. No lo cambies.
   postgres_data:
+
+networks:
+  expenses_network:
+    external: true
