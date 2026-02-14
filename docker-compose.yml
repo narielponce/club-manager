@@ -9,9 +9,9 @@ services:
       - "443:443"
     volumes:
       - ./nginx.proxy.conf:/etc/nginx/conf.d/default.conf
+      - ./frontend/landing:/usr/share/nginx/html/landing:ro
       - /var/www/certbot:/var/www/certbot
       - /etc/letsencrypt:/etc/letsencrypt
-      - ./frontend/landing:/usr/share/nginx/html/landing:ro
 
     depends_on:
       - club_backend
