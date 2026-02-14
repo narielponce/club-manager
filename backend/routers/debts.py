@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from .. import models, schemas
 from ..database import get_db
-from ..security import get_current_user, get_current_finance_user
+from ..security import get_current_user, require_roles
 
 router = APIRouter(
     tags=["debts"],
@@ -156,11 +156,11 @@ def get_or_create_payment_categories(db: Session, club_id: int):
         
     return social_fee_category, activity_income_category
 
-@router.post("/generate-monthly-debt", status_code=200)
+@router.post("/generate-monthly-debt", status_code=200, dependencies=[Depends(require_roles(['admin', 'tesorero']))])
 def generate_monthly_debt(
     request: schemas.DebtGenerationRequest,
     db: Session = Depends(get_db),
-    current_user: schemas.User = Depends(get_current_finance_user)
+    current_user: schemas.User = Depends(get_current_user)
 ):
     """
     Generates the monthly debt for all active members of a club.

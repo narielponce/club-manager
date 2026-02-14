@@ -4,19 +4,19 @@ from typing import List
 
 from .. import models, schemas
 from ..database import get_db
-from ..security import get_current_finance_user
+from ..security import require_roles, get_current_user
 
 router = APIRouter(
     prefix="/categories",
     tags=["categories"],
-    dependencies=[Depends(get_current_finance_user)],
+    dependencies=[Depends(require_roles(['admin', 'tesorero']))],
 )
 
 @router.post("/", response_model=schemas.Category, status_code=status.HTTP_201_CREATED)
 def create_category(
     category_in: schemas.CategoryCreate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Create a new category for the current user's club.
@@ -42,7 +42,7 @@ def create_category(
 @router.get("/", response_model=List[schemas.Category])
 def read_categories(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Retrieve all categories for the current user's club.
@@ -55,7 +55,7 @@ def read_categories(
 def read_category(
     category_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Retrieve a specific category by ID for the current user's club.
@@ -73,7 +73,7 @@ def update_category(
     category_id: int,
     category_in: schemas.CategoryUpdate,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Update an existing category for the current user's club.
@@ -98,7 +98,7 @@ def update_category(
 def delete_category(
     category_id: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Delete a category for the current user's club.

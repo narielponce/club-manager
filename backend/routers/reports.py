@@ -5,7 +5,7 @@ from typing import Optional, List
 
 from .. import models, schemas
 from ..database import get_db
-from ..security import get_current_finance_user, get_current_user, require_roles
+from ..security import get_current_user, require_roles
 
 router = APIRouter(
     prefix="/reports",
@@ -75,12 +75,12 @@ def get_professor_student_report(
     return schemas.ProfessorStudentReport(students=report_items)
 
 
-@router.get("/income-by-activity", dependencies=[Depends(get_current_finance_user)])
+@router.get("/income-by-activity", dependencies=[Depends(require_roles(['admin', 'tesorero']))])
 def get_income_by_activity(
     year: Optional[int] = None,
     month: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Calculates the total income grouped by each activity for the user's club.
@@ -125,11 +125,11 @@ def get_income_by_activity(
 
     return report
 
-@router.get("/income-vs-expenses/{year}", response_model=schemas.IncomeVsExpensesReport, dependencies=[Depends(get_current_finance_user)])
+@router.get("/income-vs-expenses/{year}", response_model=schemas.IncomeVsExpensesReport, dependencies=[Depends(require_roles(['admin', 'tesorero']))])
 def get_income_vs_expenses(
     year: int,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Calculates the total income and expenses for each month of a given year.
@@ -196,12 +196,12 @@ def get_income_vs_expenses(
         annual_balance=annual_balance
     )
 
-@router.get("/distribution-by-category", response_model=schemas.CategoryDistributionReport, dependencies=[Depends(get_current_finance_user)])
+@router.get("/distribution-by-category", response_model=schemas.CategoryDistributionReport, dependencies=[Depends(require_roles(['admin', 'tesorero']))])
 def get_distribution_by_category(
     year: Optional[int] = None,
     month: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Calculates the distribution of incomes and expenses grouped by category.

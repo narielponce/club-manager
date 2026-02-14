@@ -8,12 +8,12 @@ import uuid
 
 from .. import models, schemas
 from ..database import get_db
-from ..security import get_current_finance_user
+from ..security import require_roles, get_current_user
 
 router = APIRouter(
     prefix="/transactions",
     tags=["transactions"],
-    dependencies=[Depends(get_current_finance_user)],
+    dependencies=[Depends(require_roles(['admin', 'tesorero']))],
 )
 
 @router.post("/", response_model=schemas.ClubTransaction, status_code=status.HTTP_201_CREATED)
@@ -26,7 +26,7 @@ async def create_club_transaction(
     category_id: Optional[int] = Form(None),
     receipt: Optional[UploadFile] = File(None),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Create a new club transaction (income or expense).
@@ -77,7 +77,7 @@ async def create_club_transaction(
 @router.get("/", response_model=schemas.ClubTransactionPage)
 def read_club_transactions(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user),
+    current_user: models.User = Depends(get_current_user),
     type: Optional[schemas.CategoryType] = None,
     category_id: Optional[int] = None,
     start_date: Optional[date] = None,
@@ -109,7 +109,7 @@ def read_club_transactions(
 @router.get("/balance", response_model=schemas.Balance)
 def get_club_balance(
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_finance_user)
+    current_user: models.User = Depends(get_current_user)
 ):
     """
     Calculate and return the total balance for the current user's club,
