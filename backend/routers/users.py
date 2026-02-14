@@ -77,7 +77,7 @@ async def create_user(
 
 @router.get("/users/me", response_model=schemas.User)
 async def read_users_me():
-    return schemas.User(id=1, email="test@test.com", role="admin", club_id=1)
+    return schemas.User(id=1, email="test@test.com", role="admin", club_id=1, is_active=True)
 
 @router.get("/club/users/", response_model=List[schemas.User], dependencies=[Depends(require_roles(['admin']))])
 def get_club_users(db: Session = Depends(get_db), current_user: schemas.User = Depends(get_current_user)):
