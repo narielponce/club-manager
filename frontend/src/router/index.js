@@ -5,10 +5,9 @@ import ForceChangePasswordView from '../views/ForceChangePasswordView.vue'
 import RequestPasswordResetView from '../views/RequestPasswordResetView.vue'
 import ResetPasswordView from '../views/ResetPasswordView.vue'
 import SuperadminDashboardView from '../views/SuperadminDashboardView.vue'
-import SuperadminLoginView from '@/views/SuperadminLoginView.vue'
+import SuperadminLoginView from '../views/SuperadminLoginView.vue'
 
 import { accessToken } from '../services/auth.js'
-import SuperadminLoginView from '@/views/SuperadminLoginView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
