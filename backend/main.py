@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 import locale
 
 from . import models, database, security
-from .routers import auth # Keep auth for now
+from .routers import auth, members, users, activities, debts, club, superadmin, categories, transactions, reports, account, admin
 
 # --- Lifespan Events ---
 @asynccontextmanager
@@ -88,18 +88,17 @@ app.add_middleware(
 
 # --- API Routers ---
 app.include_router(auth.router)
-# Remove all business-specific routers from previous project
-# app.include_router(members.router)
-# app.include_router(users.router)
-# app.include_router(activities.router)
-# app.include_router(debts.router)
-# app.include_router(club.router)
-# app.include_router(superadmin.router)
-# app.include_router(categories.router)
-# app.include_router(transactions.router)
-# app.include_router(reports.router)
-# app.include_router(account.router)
-# app.include_router(admin.router)
+app.include_router(members.router)
+app.include_router(users.router)
+app.include_router(activities.router)
+app.include_router(debts.router)
+app.include_router(club.router)
+app.include_router(superadmin.router)
+app.include_router(categories.router)
+app.include_router(transactions.router)
+app.include_router(reports.router)
+app.include_router(account.router)
+app.include_router(admin.router)
 
 
 # --- Root Endpoint ---
