@@ -11,6 +11,10 @@ from ..email_service import email_service
 
 router = APIRouter()
 
+@router.get("/users/test")
+def test_users_endpoint():
+    return {"message": "Users endpoint test successful"}
+
 @router.post("/users/", response_model=schemas.ClubCreationResponse)
 async def create_user(
     club_name: str = Form(...),

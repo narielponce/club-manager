@@ -105,7 +105,3 @@ app.include_router(admin.router)
 @app.get("/")
 def read_root():
     return {"message": "Welcome to the Personal Expense Manager API"}
-
-@app.get("/test")
-def test_endpoint():
-    return {"message": "Test successful"}
