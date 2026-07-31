@@ -59,6 +59,8 @@ def update_club_by_superadmin(
         raise HTTPException(status_code=404, detail="Club not found")
 
     update_data = club_in.model_dump(exclude_unset=True)
+    if "tenant_type" in update_data and update_data["tenant_type"] not in ["club", "academy", "tutoring"]:
+        raise HTTPException(status_code=400, detail="Invalid tenant type. Must be 'club', 'academy', or 'tutoring'.")
     for key, value in update_data.items():
         setattr(db_club, key, value)
     

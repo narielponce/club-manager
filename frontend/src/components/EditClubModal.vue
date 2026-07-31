@@ -16,6 +16,7 @@ const form = ref({
   name: '',
   base_fee: 0.0,
   email_domain: '',
+  tenant_type: 'club',
 });
 const logoFile = ref(null);
 const error = ref(null);
@@ -27,7 +28,7 @@ watch(() => props.club, (newClub) => {
     form.value.name = newClub.name;
     form.value.base_fee = newClub.base_fee || 0.0;
     form.value.email_domain = newClub.email_domain || '';
-    // Do not set logo_url in the form, it's handled separately
+    form.value.tenant_type = newClub.tenant_type || 'club';
   }
 }, { immediate: true, deep: true });
 
@@ -44,6 +45,7 @@ const handleSubmit = async () => {
       name: form.value.name,
       base_fee: parseFloat(form.value.base_fee) || 0,
       email_domain: form.value.email_domain,
+      tenant_type: form.value.tenant_type,
     };
     await updateClub(props.club.id, payload);
 
@@ -68,14 +70,22 @@ const handleSubmit = async () => {
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Editar Club: {{ club.name }}</h5>
+          <h5 class="modal-title">Editar Organización: {{ club.name }}</h5>
           <button type="button" class="btn-close" @click="$emit('close')"></button>
         </div>
         <div class="modal-body">
           <form @submit.prevent="handleSubmit">
             <div class="mb-3">
-              <label for="edit-club-name" class="form-label">Nombre del Club</label>
+              <label for="edit-club-name" class="form-label">Nombre de la Organización</label>
               <input type="text" id="edit-club-name" class="form-control" v-model="form.name" required />
+            </div>
+            <div class="mb-3">
+              <label for="edit-club-type" class="form-label">Tipo de Organización</label>
+              <select id="edit-club-type" class="form-select" v-model="form.tenant_type" required>
+                <option value="club">Club Deportivo / Social</option>
+                <option value="academy">Academia (Danza, Música, etc.)</option>
+                <option value="tutoring">Clases Particulares / Mentoría</option>
+              </select>
             </div>
             <div class="mb-3">
               <label for="edit-club-fee" class="form-label">Cuota Base</label>

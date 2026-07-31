@@ -21,7 +21,7 @@
               <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
               <path fill-rule="evenodd" d="M5.216 14A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z"/>
             </svg>
-            Socios
+            {{ t('members') }}
           </router-link>
         </li>
         <li v-if="canAccessFinancesView" class="nav-item">
@@ -42,7 +42,7 @@
           <div class="collapse" id="reports-submenu">
             <ul class="nav flex-column ms-4">
               <li v-if="isFinanceAdmin" class="nav-item">
-                <router-link to="/reports" class="nav-link text-white py-1" active-class="active">Ingresos por Actividad</router-link>
+                <router-link to="/reports" class="nav-link text-white py-1" active-class="active">Ingresos por {{ t('activity') }}</router-link>
               </li>
               <li v-if="isFinanceAdmin" class="nav-item">
                 <router-link to="/reports/income-vs-expenses" class="nav-link text-white py-1" active-class="active">Ingresos vs Gastos</router-link>
@@ -51,18 +51,27 @@
                 <router-link to="/reports/category-distribution" class="nav-link text-white py-1" active-class="active">Distribución por Categorías</router-link>
               </li>
               <li v-if="isProfessor" class="nav-item">
-                <router-link to="/reports/my-students" class="nav-link text-white py-1" active-class="active">Estado de Cuenta Alumnos</router-link>
+                <router-link to="/reports/my-students" class="nav-link text-white py-1" active-class="active">Estado de Cuenta {{ t('members') }}</router-link>
               </li>
             </ul>
           </div>
         </li>
-        <li v-if="isAdmin" class="nav-item">
+        <li v-if="isAdmin || isProfessor" class="nav-item">
           <router-link to="/activities" class="nav-link text-white d-flex align-items-center" active-class="active">
             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-calendar-check me-2" viewBox="0 0 16 16">
               <path d="M10.854 7.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 1 1 .708-.708L7.5 9.793l2.646-2.647a.5.5 0 0 1 .708 0z"/>
               <path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z"/>
             </svg>
-            Actividades
+            {{ t('activities') }}
+          </router-link>
+        </li>
+        <li v-if="canAccessSchedules" class="nav-item">
+          <router-link to="/schedules" class="nav-link text-white d-flex align-items-center" active-class="active">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-calendar3 me-2" viewBox="0 0 16 16">
+              <path d="M14 0H2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2zM1 3.857C1 3.384 1.448 3 2 3h12c.552 0 1 .384 1 .857v10.286c0 .473-.448.857-1 .857H2c-.552 0-1-.384-1-.857V3.857z"/>
+              <path d="M6.5 7a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm-9 3a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2zm3 0a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+            </svg>
+            Agenda
           </router-link>
         </li>
         <li v-if="isAdmin" class="nav-item">
@@ -122,13 +131,16 @@
             <!-- Mobile Nav Links -->
             <ul class="navbar-nav mb-2 mb-lg-0">
               <li v-if="canViewMembers" class="nav-item d-lg-none">
-                <router-link to="/" class="nav-link" active-class="active">Socios</router-link>
+                <router-link to="/" class="nav-link" active-class="active">{{ t('members') }}</router-link>
               </li>
               <li v-if="canAccessFinancesView" class="nav-item d-lg-none">
                 <router-link to="/finances" class="nav-link" active-class="active">Finanzas</router-link>
               </li>
-              <li v-if="isAdmin" class="nav-item d-lg-none">
-                <router-link to="/activities" class="nav-link" active-class="active">Actividades</router-link>
+              <li v-if="isAdmin || isProfessor" class="nav-item d-lg-none">
+                <router-link to="/activities" class="nav-link" active-class="active">{{ t('activities') }}</router-link>
+              </li>
+              <li v-if="canAccessSchedules" class="nav-item d-lg-none">
+                <router-link to="/schedules" class="nav-link" active-class="active">Agenda</router-link>
               </li>
               <li v-if="isAdmin" class="nav-item d-lg-none">
                 <router-link to="/users" class="nav-link" active-class="active">Usuarios</router-link>
@@ -143,7 +155,7 @@
                 </a>
                 <ul class="dropdown-menu" aria-labelledby="reports-dropdown-mobile">
                     <li v-if="isFinanceAdmin">
-                      <router-link to="/reports" class="dropdown-item" active-class="active">Ingresos por Actividad</router-link>
+                      <router-link to="/reports" class="dropdown-item" active-class="active">Ingresos por {{ t('activity') }}</router-link>
                     </li>
                     <li v-if="isFinanceAdmin">
                       <router-link to="/reports/income-vs-expenses" class="dropdown-item" active-class="active">Ingresos vs Gastos</router-link>
@@ -152,7 +164,7 @@
                       <router-link to="/reports/category-distribution" class="dropdown-item" active-class="active">Distribución por Categorías</router-link>
                     </li>
                     <li v-if="isProfessor">
-                      <router-link to="/reports/my-students" class="dropdown-item" active-class="active">Estado de Cuenta Alumnos</router-link>
+                      <router-link to="/reports/my-students" class="dropdown-item" active-class="active">Estado de Cuenta {{ t('members') }}</router-link>
                     </li>
                 </ul>
               </li>
@@ -179,10 +191,26 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, watch, onMounted } from 'vue'
 import { logout } from '../services/auth.js'
 import { currentUser } from '../services/user.js'
 import { RouterLink } from 'vue-router'
+import { useTerminology } from '../composables/useTerminology.js'
+
+const { tenantType, t } = useTerminology()
+
+const applyTheme = (type) => {
+  document.body.classList.remove('theme-club', 'theme-academy', 'theme-tutoring')
+  document.body.classList.add(`theme-${type}`)
+}
+
+watch(tenantType, (newType) => {
+  applyTheme(newType)
+}, { immediate: true })
+
+onMounted(() => {
+  applyTheme(tenantType.value)
+})
 
 const defaultLogo = "data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='30' fill='%23495057'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='24' font-family='sans-serif' dy='.1em'%3ECM%3C/text%3E%3C/svg%3E";
 
@@ -195,6 +223,10 @@ const logoSrc = computed(() => {
 
 const isAdmin = computed(() => currentUser.value?.role === 'admin')
 const canViewMembers = computed(() => {
+  const role = currentUser.value?.role
+  return role === 'admin' || role === 'tesorero' || role === 'profesor'
+})
+const canAccessSchedules = computed(() => {
   const role = currentUser.value?.role
   return role === 'admin' || role === 'tesorero' || role === 'profesor'
 })

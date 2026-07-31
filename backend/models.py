@@ -1,6 +1,6 @@
 import enum
 from sqlalchemy import (
-    Boolean, Column, ForeignKey, Integer, String, Enum as SQLAlchemyEnum, Date, Numeric, Table, Float, DateTime
+    Boolean, Column, ForeignKey, Integer, String, Enum as SQLAlchemyEnum, Date, Numeric, Table, Float, DateTime, Time
 )
 from sqlalchemy.orm import relationship
 
@@ -22,6 +22,7 @@ class Club(Base):
     base_fee = Column(Float, nullable=True)
     email_domain = Column(String, nullable=True) # Domain for club emails, e.g., 'example.com'
     logo_url = Column(String, nullable=True) # URL or path to the club's logo
+    tenant_type = Column(String, default="club", server_default="club", nullable=False)
     is_active = Column(Boolean, default=True, index=True)
 
     users = relationship("User", back_populates="club")
@@ -52,6 +53,7 @@ class Activity(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     monthly_cost = Column(Numeric(10, 2), nullable=False)
+    billing_type = Column(String, default="monthly", server_default="monthly", nullable=False)
 
     club_id = Column(Integer, ForeignKey("clubs.id"))
     club = relationship("Club", back_populates="activities")
@@ -64,6 +66,7 @@ class Activity(Base):
         secondary=member_activity_association,
         back_populates="activities"
     )
+    schedules = relationship("ClassSchedule", back_populates="activity", cascade="all, delete-orphan")
 
 class MemberTypeEnum(str, enum.Enum):
     ADHERENTE = "Adherente"
@@ -183,3 +186,44 @@ class DebtItem(Base):
 
     activity_id = Column(Integer, ForeignKey("activities.id"), nullable=True)
     activity = relationship("Activity")
+
+class ClassRecord(Base):
+    __tablename__ = "class_records"
+
+    id = Column(Integer, primary_key=True, index=True)
+    member_id = Column(Integer, ForeignKey("members.id"), nullable=False)
+    activity_id = Column(Integer, ForeignKey("activities.id"), nullable=False)
+    date = Column(Date, nullable=False)
+    notes = Column(String, nullable=True)
+    hours = Column(Float, default=1.0, nullable=False)
+    amount = Column(Numeric(10, 2), default=0.0, nullable=False)
+
+    member = relationship("Member")
+    activity = relationship("Activity")
+
+class PhysicalSpace(Base):
+    __tablename__ = "physical_spaces"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    description = Column(String, nullable=True)
+    capacity = Column(Integer, default=0)
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False)
+
+    club = relationship("Club")
+    schedules = relationship("ClassSchedule", back_populates="space", cascade="all, delete-orphan")
+
+class ClassSchedule(Base):
+    __tablename__ = "class_schedules"
+
+    id = Column(Integer, primary_key=True, index=True)
+    activity_id = Column(Integer, ForeignKey("activities.id", ondelete="CASCADE"), nullable=False)
+    space_id = Column(Integer, ForeignKey("physical_spaces.id", ondelete="CASCADE"), nullable=False)
+    day_of_week = Column(Integer, nullable=False) # 0 = Lunes, 6 = Domingo
+    start_time = Column(Time, nullable=False)
+    end_time = Column(Time, nullable=False)
+    club_id = Column(Integer, ForeignKey("clubs.id"), nullable=False)
+
+    club = relationship("Club")
+    activity = relationship("Activity", back_populates="schedules")
+    space = relationship("PhysicalSpace", back_populates="schedules")

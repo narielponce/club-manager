@@ -19,6 +19,7 @@
                 <th scope="col">Alumno</th>
                 <th scope="col">DNI</th>
                 <th scope="col" class="text-end">Saldo</th>
+                <th scope="col" class="text-end" style="width: 150px;">Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -28,25 +29,41 @@
                 <td class="text-end" :class="getBalanceClass(student.balance)">
                   {{ $formatCurrency(student.balance) }}
                 </td>
+                <td class="text-end">
+                  <button @click="openStatementModal(student)" class="btn btn-outline-info btn-sm">Ver Detalle</button>
+                </td>
               </tr>
               <tr v-if="reportData.length === 0">
-                <td colspan="3" class="text-center text-muted">No se encontraron alumnos en tus actividades.</td>
+                <td colspan="4" class="text-center text-muted">No se encontraron alumnos en tus actividades.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
     </div>
+
+    <!-- Account Statement Modal for detail view -->
+    <MemberStatementModal
+      v-if="isStatementModalVisible"
+      :show="isStatementModalVisible"
+      :member-id="selectedStudent?.member_id"
+      :member-name="`${selectedStudent?.first_name} ${selectedStudent?.last_name}`"
+      @close="closeStatementModal"
+    />
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { apiFetch } from '../services/api.js';
+import MemberStatementModal from '../components/MemberStatementModal.vue';
 
 const reportData = ref([]);
 const isLoading = ref(true);
 const error = ref(null);
+
+const isStatementModalVisible = ref(false);
+const selectedStudent = ref(null);
 
 const fetchReport = async () => {
   isLoading.value = true;
@@ -63,9 +80,19 @@ const fetchReport = async () => {
   }
 };
 
+const openStatementModal = (student) => {
+  selectedStudent.value = student;
+  isStatementModalVisible.value = true;
+};
+
+const closeStatementModal = () => {
+  isStatementModalVisible.value = false;
+  selectedStudent.value = null;
+};
+
 const getBalanceClass = (balance) => {
-  if (balance < 0) return 'text-danger fw-bold';
-  if (balance > 0) return 'text-success';
+  if (balance > 0) return 'text-danger fw-bold'; // Deudor
+  if (balance < 0) return 'text-success'; // A favor
   return 'text-muted';
 };
 

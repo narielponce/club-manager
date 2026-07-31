@@ -18,6 +18,7 @@ async def create_user(
     email: str = Form(...),
     recovery_email: str = Form(...), # Changed from password to recovery_email
     logo: Optional[UploadFile] = File(None),
+    tenant_type: str = Form("club"),
     db: Session = Depends(get_db),
     current_user: models.User = Depends(security.get_current_superadmin_user),
     background_tasks: BackgroundTasks = None # Added BackgroundTasks
@@ -79,8 +80,11 @@ async def create_user(
     else:
         print("--- DEBUG: 'if logo:' block was skipped. Logo is None or False.") # DEBUG
 
+    if tenant_type not in ["club", "academy", "tutoring"]:
+        raise HTTPException(status_code=400, detail="Invalid tenant type. Must be 'club', 'academy', or 'tutoring'.")
+
     # Create the new club with the extracted domain and logo URL
-    new_club = models.Club(name=club_name, email_domain=email_domain, logo_url=logo_url)
+    new_club = models.Club(name=club_name, email_domain=email_domain, logo_url=logo_url, tenant_type=tenant_type)
     db.add(new_club)
     db.commit()
     db.refresh(new_club)

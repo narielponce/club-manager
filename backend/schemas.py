@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from typing import List, Optional
 import enum
-from datetime import date, datetime # Added datetime
+from datetime import date, datetime, time # Added datetime, time
 
 class UserRole(str, enum.Enum):
     admin = "admin"
@@ -31,6 +31,7 @@ class ActivityBase(BaseModel):
     name: str
     monthly_cost: float
     profesor_id: Optional[int] = None
+    billing_type: Optional[str] = "monthly"
 
 class ActivityCreate(ActivityBase):
     pass
@@ -41,6 +42,34 @@ class Activity(ActivityBase):
     profesor: Optional["User"] = None
     class Config:
         from_attributes = True
+
+class ClassRecordBase(BaseModel):
+    member_id: int
+    activity_id: int
+    date: date
+    notes: Optional[str] = None
+    hours: Optional[float] = 1.0
+    amount: Optional[float] = 0.0
+
+class ClassRecordCreate(ClassRecordBase):
+    pass
+
+class ClassRecordMember(BaseModel):
+    id: int
+    first_name: str
+    last_name: str
+    dni: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class ClassRecord(ClassRecordBase):
+    id: int
+    member: Optional[ClassRecordMember] = None
+
+    class Config:
+        from_attributes = True
+
 
 class Member(MemberBase):
     id: int
@@ -103,6 +132,7 @@ class SuperadminUserUpdate(BaseModel):
 
 class ClubUpdate(BaseModel):
     base_fee: float
+    tenant_type: Optional[str] = None
 
 class SuperadminClubUpdate(BaseModel):
     name: Optional[str] = None
@@ -110,6 +140,7 @@ class SuperadminClubUpdate(BaseModel):
     is_active: Optional[bool] = None
     logo_url: Optional[str] = None
     email_domain: Optional[str] = None
+    tenant_type: Optional[str] = None
 
 class Club(BaseModel):
     id: int
@@ -117,6 +148,7 @@ class Club(BaseModel):
     base_fee: Optional[float] = None
     email_domain: Optional[str] = None
     logo_url: Optional[str] = None # URL or path to the club's logo
+    tenant_type: str = "club"
     is_active: bool
     class Config:
         from_attributes = True
@@ -306,3 +338,41 @@ class StudentAccountStatus(BaseModel):
 
 class ProfessorStudentReport(BaseModel):
     students: List[StudentAccountStatus]
+
+# --- Schemas for Physical Spaces and Schedules ---
+class PhysicalSpaceBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    capacity: Optional[int] = 0
+
+class PhysicalSpaceCreate(PhysicalSpaceBase):
+    pass
+
+class PhysicalSpace(PhysicalSpaceBase):
+    id: int
+    club_id: int
+
+    class Config:
+        from_attributes = True
+
+class ClassScheduleBase(BaseModel):
+    activity_id: int
+    space_id: int
+    day_of_week: int  # 0 = Lunes, 6 = Domingo
+    start_time: time
+    end_time: time
+
+class ClassScheduleCreate(ClassScheduleBase):
+    pass
+
+class ActivityWithMembers(Activity):
+    members: List[ClassRecordMember] = []
+
+class ClassSchedule(ClassScheduleBase):
+    id: int
+    club_id: int
+    activity: ActivityWithMembers
+    space: PhysicalSpace
+
+    class Config:
+        from_attributes = True

@@ -20,3 +20,50 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   background-color: #f8f9fa; /* A light background for consistency */
 }
+
+/* --- THEME STYLING OVERRIDES --- */
+
+/* Academy Theme (Pink/Purple elegant) */
+body.theme-academy {
+  --bs-primary: #8a2be2;
+  --bs-primary-rgb: 138, 43, 226;
+  --bs-link-color: #8a2be2;
+  --bs-link-hover-color: #6a1b9a;
+}
+body.theme-academy .bg-dark {
+  background-color: #4a0e4e !important; /* Elegant dark violet/burgundy sidebar */
+}
+body.theme-academy .btn-primary {
+  background-color: #8a2be2 !important;
+  border-color: #8a2be2 !important;
+}
+body.theme-academy .btn-primary:hover {
+  background-color: #6a1b9a !important;
+  border-color: #6a1b9a !important;
+}
+body.theme-academy .nav-pills .nav-link.active {
+  background-color: #8a2be2 !important;
+}
+
+/* Tutoring Theme (Teal/Professional Blue) */
+body.theme-tutoring {
+  --bs-primary: #0ea5e9;
+  --bs-primary-rgb: 14, 165, 233;
+  --bs-link-color: #0ea5e9;
+  --bs-link-hover-color: #0369a1;
+}
+body.theme-tutoring .bg-dark {
+  background-color: #0f172a !important; /* Modern slate/dark blue sidebar */
+}
+body.theme-tutoring .btn-primary {
+  background-color: #0ea5e9 !important;
+  border-color: #0ea5e9 !important;
+  color: white !important;
+}
+body.theme-tutoring .btn-primary:hover {
+  background-color: #0284c7 !important;
+  border-color: #0284c7 !important;
+}
+body.theme-tutoring .nav-pills .nav-link.active {
+  background-color: #0ea5e9 !important;
+}

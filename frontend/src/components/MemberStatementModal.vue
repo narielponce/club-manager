@@ -1,7 +1,10 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, onMounted, watch, computed } from 'vue'
 import { apiFetch } from '../services/api.js'
+import { currentUser } from '../services/user.js'
 import ImputePaymentModal from './ImputePaymentModal.vue'
+
+import { useTerminology } from '../composables/useTerminology.js'
 
 const props = defineProps({
   show: Boolean,
@@ -10,6 +13,15 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
+
+const { tenantType } = useTerminology()
+
+const canImputePayments = computed(() => {
+  const role = currentUser.value?.role
+  if (role === 'admin' || role === 'tesorero') return true
+  if (role === 'profesor' && tenantType.value === 'tutoring') return true
+  return false
+})
 
 const statement = ref(null)
 const error = ref(null)
@@ -154,7 +166,7 @@ const formatDate = (dateString) => {
                       </td>
                       <td class="text-end">
                         <button 
-                          v-if="getDebtStatus(item).text !== 'Pagado'"
+                          v-if="canImputePayments && getDebtStatus(item).text !== 'Pagado'"
                           @click="openImputePaymentModal(item.debt_id)"
                           class="btn btn-success btn-sm"
                         >
@@ -213,7 +225,7 @@ const formatDate = (dateString) => {
                                     </span>
                                 </div>
                                 <button 
-                                    v-if="getDebtStatus(item).text !== 'Pagado'"
+                                    v-if="canImputePayments && getDebtStatus(item).text !== 'Pagado'"
                                     @click="openImputePaymentModal(item.debt_id)"
                                     class="btn btn-success btn-sm"
                                 >

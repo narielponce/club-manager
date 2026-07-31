@@ -26,6 +26,12 @@ const fetchData = async () => {
   }
 };
 
+const getTenantTypeLabel = (type) => {
+  if (type === 'academy') return 'Academia';
+  if (type === 'tutoring') return 'Clases Particulares';
+  return 'Club';
+};
+
 const handleDeactivate = async (clubId) => {
   if (!confirm('¿Estás seguro de que quieres desactivar este club?')) {
     return;
@@ -84,15 +90,15 @@ onMounted(fetchData);
   <div>
     <div class="d-flex justify-content-between align-items-center mb-4">
       <h1>Dashboard de Superadmin</h1>
-      <RouterLink to="/superadmin/create-club" class="btn btn-primary">Crear Nuevo Club</RouterLink>
+      <RouterLink to="/superadmin/create-club" class="btn btn-primary">Crear Nueva Organización</RouterLink>
     </div>
 
-    <div v-if="isLoading" class="alert alert-info">Cargando clubes...</div>
+    <div v-if="isLoading" class="alert alert-info">Cargando organizaciones...</div>
     <div v-if="error" class="alert alert-danger">{{ error }}</div>
 
     <div v-if="!isLoading && !error" class="card shadow-sm">
       <div class="card-header">
-        <h3>Clubes Registrados</h3>
+        <h3>Organizaciones Registradas</h3>
       </div>
       <div class="card-body">
         <div class="table-responsive">
@@ -100,7 +106,8 @@ onMounted(fetchData);
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Nombre del Club</th>
+                <th>Nombre</th>
+                <th>Tipo</th>
                 <th>Cuota Base</th>
                 <th>Estado</th>
                 <th>Socios Activos</th>
@@ -112,21 +119,27 @@ onMounted(fetchData);
               <tr v-for="club in clubs" :key="club.id" :class="{ 'text-muted': !club.is_active }">
                 <td>{{ club.id }}</td>
                 <td>{{ club.name }}</td>
+                <td>
+                  <span class="badge bg-secondary">
+                    {{ getTenantTypeLabel(club.tenant_type) }}
+                  </span>
+                </td>
                 <td>{{ club.base_fee ? `$${club.base_fee}` : 'No asignada' }}</td>
                 <td>
                   <span :class="club.is_active ? 'text-success' : 'text-danger'">
-                                      <strong>{{ club.is_active ? 'Activo' : 'Inactivo' }}</strong>
-                                    </span>
-                                  </td>
+                    <strong>{{ club.is_active ? 'Activo' : 'Inactivo' }}</strong>
+                  </span>
+                </td>
                 <td>{{ club.member_count }}</td>
-                                  <td>
-                                    <RouterLink :to="{ name: 'superadmin-club-admins', params: { id: club.id } }" class="btn btn-info btn-sm">
-                                      Gestionar
-                                    </RouterLink>
-                                  </td>
-                                  <td class="text-end">
-                                    <button @click="handleEdit(club)" class="btn btn-secondary btn-sm me-2">Editar</button>
-                                    <button v-if="club.is_active" @click="handleDeactivate(club.id)" class="btn btn-warning btn-sm me-2">Desactivar</button>                  <button v-else @click="handleReactivate(club.id)" class="btn btn-success btn-sm me-2">Reactivar</button>
+                <td>
+                  <RouterLink :to="{ name: 'superadmin-club-admins', params: { id: club.id } }" class="btn btn-info btn-sm">
+                    Gestionar
+                  </RouterLink>
+                </td>
+                <td class="text-end">
+                  <button @click="handleEdit(club)" class="btn btn-secondary btn-sm me-2">Editar</button>
+                  <button v-if="club.is_active" @click="handleDeactivate(club.id)" class="btn btn-warning btn-sm me-2">Desactivar</button>
+                  <button v-else @click="handleReactivate(club.id)" class="btn btn-success btn-sm me-2">Reactivar</button>
                   <button @click="openDeleteModal(club)" class="btn btn-danger btn-sm">Eliminar</button>
                 </td>
               </tr>

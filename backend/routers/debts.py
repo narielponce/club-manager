@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Form
+from sqlalchemy import extract
 from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
 import os
@@ -35,6 +36,21 @@ def create_payment_for_debt(
 
     if not db_debt:
         raise HTTPException(status_code=404, detail="Debt not found")
+
+    db_club = db.query(models.Club).filter(models.Club.id == current_user.club_id).first()
+    if not db_club:
+        raise HTTPException(status_code=404, detail="Club not found")
+
+    if current_user.role == 'profesor':
+        if db_club.tenant_type != 'tutoring':
+            raise HTTPException(status_code=403, detail="Los profesores solo pueden registrar cobros bajo la modalidad de clases particulares (tutoring).")
+        
+        is_my_student = db.query(models.Member).join(models.Member.activities).filter(
+            models.Member.id == db_debt.member_id,
+            models.Activity.profesor_id == current_user.id
+        ).first()
+        if not is_my_student:
+            raise HTTPException(status_code=403, detail="No tienes autorización para registrar cobros a alumnos fuera de tus clases.")
 
     try:
         parsed_payment_date = datetime.strptime(payment_date, "%Y-%m-%d").date()
@@ -204,13 +220,14 @@ def generate_monthly_debt(
 
         # Add activity fees
         for activity in member.activities:
-            activity_cost_decimal = Decimal(str(activity.monthly_cost))
-            debt_items.append(models.DebtItem(
-                description=f"Actividad: {activity.name}", 
-                amount=activity_cost_decimal,
-                activity_id=activity.id # Link the debt item to the activity
-            ))
-            total_amount += activity_cost_decimal
+            if getattr(activity, "billing_type", "monthly") != "per_class":
+                activity_cost_decimal = Decimal(str(activity.monthly_cost))
+                debt_items.append(models.DebtItem(
+                    description=f"Actividad: {activity.name}", 
+                    amount=activity_cost_decimal,
+                    activity_id=activity.id # Link the debt item to the activity
+                ))
+                total_amount += activity_cost_decimal
         
         if total_amount > 0:
             new_debt = models.Debt(

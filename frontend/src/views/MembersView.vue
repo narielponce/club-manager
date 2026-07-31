@@ -6,8 +6,11 @@ import MemberActivitiesModal from '../components/MemberActivitiesModal.vue'
 import AddMemberModal from '../components/AddMemberModal.vue'
 import { apiFetch } from '../services/api.js'
 import { currentUser } from '../services/user.js'
+import { useTerminology } from '../composables/useTerminology.js'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
+
+const { t } = useTerminology()
 
 const members = ref([])
 const error = ref(null)
@@ -116,7 +119,7 @@ const handlePrint = async () => {
     const membersToPrint = data.items;
 
     if (membersToPrint.length === 0) {
-      alert("No hay socios para imprimir con los filtros actuales.");
+      alert(`No hay ${t('members').toLowerCase()} para imprimir con los filtros actuales.`);
       isPrinting.value = false;
       return;
     }
@@ -126,11 +129,11 @@ const handlePrint = async () => {
     
     const activityName = selectedActivityId.value 
       ? activities.value.find(a => a.id === selectedActivityId.value)?.name 
-      : 'Todas las actividades';
+      : `Todas las ${t('activities').toLowerCase()}`;
     
-    doc.text(`Listado de Socios`, 14, 16);
+    doc.text(`Listado de ${t('members')}`, 14, 16);
     doc.setFontSize(10);
-    doc.text(`Filtro de Actividad: ${activityName || 'N/A'}`, 14, 22);
+    doc.text(`Filtro de ${t('activity')}: ${activityName || 'N/A'}`, 14, 22);
     doc.text(`Fecha: ${new Date().toLocaleDateString('es-ES')}`, 14, 28);
 
 
@@ -155,7 +158,7 @@ const handlePrint = async () => {
     });
 
     // 3. Save the PDF
-    doc.save('listado-socios.pdf');
+    doc.save(`listado-${t('members').toLowerCase()}.pdf`);
 
   } catch (e) {
     if (e.name !== "SessionExpiredError") {
@@ -214,8 +217,8 @@ const handleMemberUpdateFromModal = (updatedMember) => {
 <template>
   <div>
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1>Gestión de Socios</h1>
-      <button v-if="isAdmin" class="btn btn-primary" @click="isAddMemberModalVisible = true">Nuevo Socio</button>
+      <h1>Gestión de {{ t('members') }}</h1>
+      <button v-if="isAdmin" class="btn btn-primary" @click="isAddMemberModalVisible = true">Nuevo {{ t('member') }}</button>
     </div>
 
     <!-- Search Form -->
@@ -233,9 +236,9 @@ const handleMemberUpdateFromModal = (updatedMember) => {
             />
           </div>
           <div class="col-md-4">
-            <label for="activity-filter" class="form-label">Filtrar por Actividad</label>
+            <label for="activity-filter" class="form-label">Filtrar por {{ t('activity') }}</label>
             <select id="activity-filter" class="form-select" v-model="selectedActivityId">
-              <option :value="null">Todas las actividades</option>
+              <option :value="null">Todas las {{ t('activities').toLowerCase() }}</option>
               <option v-for="activity in activities" :key="activity.id" :value="activity.id">
                 {{ activity.name }}
               </option>
@@ -253,7 +256,7 @@ const handleMemberUpdateFromModal = (updatedMember) => {
       </div>
     </div>
 
-    <div v-if="isLoading" class="alert alert-info">Cargando socios...</div>
+    <div v-if="isLoading" class="alert alert-info">Cargando {{ t('members').toLowerCase() }}...</div>
     <div v-if="error" class="alert alert-danger">{{ error }}</div>
     
     <MembersList

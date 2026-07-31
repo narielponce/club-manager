@@ -1,6 +1,7 @@
 <script setup>
 import { reactive, ref, watch } from 'vue'
 import { apiFetch } from '../services/api.js'
+import { useTerminology } from '../composables/useTerminology.js'
 
 const props = defineProps({
   show: Boolean,
@@ -11,11 +12,13 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close', 'activity-added'])
+const { t } = useTerminology()
 
 const newActivity = reactive({
   name: '',
   monthly_cost: '',
-  profesor_id: null
+  profesor_id: null,
+  billing_type: 'monthly'
 })
 
 const message = ref('')
@@ -25,6 +28,7 @@ const resetForm = () => {
   newActivity.name = ''
   newActivity.monthly_cost = ''
   newActivity.profesor_id = null
+  newActivity.billing_type = 'monthly'
   message.value = ''
   error.value = null
 }
@@ -33,18 +37,17 @@ const handleSubmit = async () => {
   error.value = null
   message.value = ''
   try {
-    // Make sure monthly_cost is a float and profesor_id is null if not selected
     const payload = {
       name: newActivity.name,
       monthly_cost: parseFloat(newActivity.monthly_cost),
-      profesor_id: newActivity.profesor_id || null
+      profesor_id: newActivity.profesor_id || null,
+      billing_type: newActivity.billing_type
     };
     await apiFetch('/activities/', {
       method: 'POST',
       body: JSON.stringify(payload),
     })
-    message.value = 'Actividad creada con éxito! Puedes cerrar esta ventana o añadir otra.'
-    // Don't reset form fully, just clear the name for quick multi-add
+    message.value = `${t('activity')} creada con éxito! Puedes cerrar esta ventana o añadir otra.`
     newActivity.name = ''
     emit('activity-added')
   } catch (e) {
@@ -53,7 +56,7 @@ const handleSubmit = async () => {
     }
   }
 }
-// Reset form when modal is closed
+
 watch(() => props.show, (newVal) => {
   if (!newVal) {
     setTimeout(() => {
@@ -68,22 +71,31 @@ watch(() => props.show, (newVal) => {
     <div class="modal-dialog modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Crear Nueva Actividad</h5>
+          <h5 class="modal-title">Crear Nueva {{ t('activity') }}</h5>
           <button type="button" class="btn-close" @click="$emit('close')"></button>
         </div>
         <div class="modal-body">
           <form @submit.prevent="handleSubmit">
             <div class="mb-3">
-              <label for="modal-activity-name" class="form-label">Nombre de la Actividad</label>
+              <label for="modal-activity-name" class="form-label">Nombre de la {{ t('activity') }}</label>
               <input type="text" id="modal-activity-name" class="form-control" v-model="newActivity.name" required />
             </div>
             <div class="mb-3">
-              <label for="modal-activity-cost" class="form-label">Costo Mensual</label>
+              <label for="modal-activity-billing-type" class="form-label">Tipo de Cobro</label>
+              <select id="modal-activity-billing-type" class="form-select" v-model="newActivity.billing_type" required>
+                <option value="monthly">Mensual Fijo</option>
+                <option value="per_class">Por Clase / Sesión</option>
+              </select>
+            </div>
+            <div class="mb-3">
+              <label for="modal-activity-cost" class="form-label">
+                {{ newActivity.billing_type === 'per_class' ? 'Costo por Clase' : 'Costo Mensual' }}
+              </label>
               <input type="number" step="0.01" id="modal-activity-cost" class="form-control"
                 v-model="newActivity.monthly_cost" required placeholder="0.00" />
             </div>
             <div class="mb-3">
-              <label for="modal-activity-profesor" class="form-label">Profesor Asignado</label>
+              <label for="modal-activity-profesor" class="form-label">{{ t('professor') }} Asignado</label>
               <select id="modal-activity-profesor" class="form-select" v-model="newActivity.profesor_id">
                 <option :value="null">Sin asignar</option>
                 <option v-for="profesor in professors" :key="profesor.id" :value="profesor.id">
@@ -97,7 +109,7 @@ watch(() => props.show, (newVal) => {
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="$emit('close')">Cerrar</button>
-          <button type="button" class="btn btn-primary" @click="handleSubmit">Guardar Actividad</button>
+          <button type="button" class="btn btn-primary" @click="handleSubmit">Guardar {{ t('activity') }}</button>
         </div>
       </div>
     </div>

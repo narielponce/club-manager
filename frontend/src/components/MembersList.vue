@@ -2,11 +2,18 @@
 import { ref, reactive, computed } from 'vue'
 import { apiFetch } from '../services/api.js'
 import { currentUser } from '../services/user.js'
+import { useTerminology } from '../composables/useTerminology.js'
+
+const { t } = useTerminology()
 
 const isAdmin = computed(() => currentUser.value?.role === 'admin')
 const canManagePayments = computed(() => {
   const role = currentUser.value?.role
   return role === 'admin' || role === 'tesorero'
+})
+const canViewStatement = computed(() => {
+  const role = currentUser.value?.role
+  return role === 'admin' || role === 'tesorero' || role === 'profesor'
 })
 const canManageActivities = computed(() => {
   const role = currentUser.value?.role
@@ -48,18 +55,18 @@ const emit = defineEmits([
 
 // --- Delete Logic ---
 const handleDelete = async (memberId) => {
-  if (!confirm('¿Estás seguro de que quieres borrar este socio?')) {
+  if (!confirm(`¿Estás seguro de que quieres borrar este ${t('member').toLowerCase()}?`)) {
     return
   }
   try {
     await apiFetch(`/members/${memberId}`, { method: 'DELETE' })
     emit('member-deleted')
-      } catch (error) {
-        if (error.name !== "SessionExpiredError") {
-          alert('Error al borrar socio: ' + error.message)
-        }
-      }
+  } catch (error) {
+    if (error.name !== "SessionExpiredError") {
+      alert(`Error al borrar ${t('member').toLowerCase()}: ` + error.message)
     }
+  }
+}
 
     // --- Edit Logic ---
     const editingMemberId = ref(null)
@@ -147,7 +154,7 @@ const formatPhoneNumber = (phoneNumber) => {
 <template>
   <div class="card shadow-sm">
     <div class="card-header">
-      <h2>Listado de Socios</h2>
+      <h2>Listado de {{ t('members') }}</h2>
     </div>
     <div class="card-body">
       <!-- Desktop view: Table -->
@@ -162,8 +169,8 @@ const formatPhoneNumber = (phoneNumber) => {
                 Apellido <span v-if="sortBy === 'last_name'">▼</span>
               </th>
               <th>Nombre</th>
-              <th>N° Socio</th>
-              <th>Tipo Socio</th>
+              <th>N° {{ t('member') }}</th>
+              <th>Tipo {{ t('member') }}</th>
               <th>Email</th>
               <th>Teléfono</th>
               <th class="text-end">Acciones</th>
@@ -180,7 +187,7 @@ const formatPhoneNumber = (phoneNumber) => {
                 <td>{{ member.email }}</td>
                 <td>{{ formatPhoneNumber(member.phone) }}</td>
                 <td class="text-end">
-                  <button v-if="canManagePayments" @click="viewPayments(member)" class="btn btn-info btn-sm me-2">Estado de Cuenta</button>
+                  <button v-if="canViewStatement" @click="viewPayments(member)" class="btn btn-info btn-sm me-2">Estado de Cuenta</button>
                   <button v-if="canManageActivities" @click="manageActivities(member)" class="btn btn-secondary btn-sm me-2">Actividades</button>
                   <button v-if="isAdmin" @click="startEditing(member)" class="btn btn-primary btn-sm me-2">Editar</button>
                   <button v-if="isAdmin" @click="handleDelete(member.id)" class="btn btn-danger btn-sm">Borrar</button>
@@ -216,7 +223,7 @@ const formatPhoneNumber = (phoneNumber) => {
        <!-- Mobile view: Cards -->
       <div class="d-block d-lg-none">
         <div v-if="members.length === 0" class="text-center text-muted mt-3">
-          No hay socios para mostrar.
+          No hay {{ t('members').toLowerCase() }} para mostrar.
         </div>
         <div v-for="member in members" :key="`mobile-${member.id}`" class="card mb-3">
           <!-- View Mode -->
@@ -224,7 +231,7 @@ const formatPhoneNumber = (phoneNumber) => {
             <div class="card-body">
               <h5 class="card-title">{{ member.last_name }}, {{ member.first_name }}</h5>
               <h6 class="card-subtitle mb-2 text-muted">
-                DNI: {{ formatDni(member.dni) }} | N° Socio: {{ member.member_number || '-' }}
+                DNI: {{ formatDni(member.dni) }} | N° {{ t('member') }}: {{ member.member_number || '-' }}
               </h6>
               
               <div class="mt-3">
@@ -241,8 +248,8 @@ const formatPhoneNumber = (phoneNumber) => {
               </div>
             </div>
             <div class="card-footer bg-transparent d-flex justify-content-end align-items-center flex-wrap gap-2">
-              <button v-if="canManagePayments" @click="viewPayments(member)" class="btn btn-info btn-sm">Estado de Cuenta</button>
-              <button v-if="canManageActivities" @click="manageActivities(member)" class="btn btn-secondary btn-sm">Actividades</button>
+              <button v-if="canViewStatement" @click="viewPayments(member)" class="btn btn-info btn-sm">Estado de Cuenta</button>
+              <button v-if="canManageActivities" @click="manageActivities(member)" class="btn btn-secondary btn-sm">{{ t('activities') }}</button>
               <div v-if="isAdmin" class="dropdown">
                 <button class="btn btn-primary btn-sm dropdown-toggle" type="button" :id="`dropdownMenuButton-mobile-${member.id}`" data-bs-toggle="dropdown" aria-expanded="false">
                   Más

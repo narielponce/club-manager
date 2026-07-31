@@ -1,14 +1,20 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { apiFetch } from '../services/api.js'
+import { currentUser } from '../services/user.js'
 import ActivityList from '../components/ActivityList.vue'
 import AddActivityModal from '../components/AddActivityModal.vue'
+import { useTerminology } from '../composables/useTerminology.js'
+
+const { t } = useTerminology()
 
 const activities = ref([])
 const professors = ref([])
 const error = ref(null)
 const isLoading = ref(true)
 const isAddModalVisible = ref(false)
+
+const isAdmin = computed(() => currentUser.value?.role === 'admin')
 
 const fetchActivities = async () => {
   try {
@@ -30,7 +36,6 @@ const fetchProfessors = async () => {
     professors.value = users.filter(user => user.role === 'profesor');
   } catch (e) {
     if (e.name !== "SessionExpiredError") {
-      // Do not block activity view if professors fail to load
       console.error("Error fetching professors:", e.message);
     }
   }
@@ -42,7 +47,6 @@ onMounted(() => {
 });
 
 const handleActivitiesChanged = () => {
-  // Close modal on success and refresh list
   isAddModalVisible.value = false
   fetchActivities()
 }
@@ -51,11 +55,11 @@ const handleActivitiesChanged = () => {
 <template>
   <div>
     <div class="d-flex justify-content-between align-items-center mb-4">
-      <h1>Gestión de Actividades</h1>
-      <button class="btn btn-primary" @click="isAddModalVisible = true">Nueva Actividad</button>
+      <h1>Gestión de {{ t('activities') }}</h1>
+      <button v-if="isAdmin" class="btn btn-primary" @click="isAddModalVisible = true">Nueva {{ t('activity') }}</button>
     </div>
 
-    <div v-if="isLoading" class="alert alert-info">Cargando actividades...</div>
+    <div v-if="isLoading" class="alert alert-info">Cargando {{ t('activities').toLowerCase() }}...</div>
     <div v-if="error" class="alert alert-danger">{{ error }}</div>
     
     <ActivityList

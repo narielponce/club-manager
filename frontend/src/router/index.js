@@ -15,6 +15,7 @@ import ProfessorReportView from '../views/ProfessorReportView.vue'
 import ForceChangePasswordView from '../views/ForceChangePasswordView.vue' // Added
 import RequestPasswordResetView from '../views/RequestPasswordResetView.vue' // Added
 import ResetPasswordView from '../views/ResetPasswordView.vue' // Added
+import SchedulesView from '../views/SchedulesView.vue'
 import { accessToken } from '../services/auth.js'
 
 const router = createRouter({
@@ -30,6 +31,12 @@ const router = createRouter({
       path: '/activities',
       name: 'activities',
       component: ActivitiesView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/schedules',
+      name: 'schedules',
+      component: SchedulesView,
       meta: { requiresAuth: true }
     },
     {

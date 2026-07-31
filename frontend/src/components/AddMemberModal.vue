@@ -1,12 +1,14 @@
 <script setup>
 import { reactive, ref, watch } from 'vue'
 import { apiFetch } from '../services/api.js'
+import { useTerminology } from '../composables/useTerminology.js'
 
 const props = defineProps({
   show: Boolean,
 })
 
 const emit = defineEmits(['close', 'member-added'])
+const { t } = useTerminology()
 
 const newMember = reactive({
   first_name: '',
@@ -51,15 +53,16 @@ const handleSubmit = async () => {
       method: 'POST',
       body: JSON.stringify(payload),
     })
-    message.value = 'Socio creado con éxito! Puedes cerrar esta ventana o añadir otro.'
+    message.value = `${t('member')} creado con éxito! Puedes cerrar esta ventana o añadir otro.`
     resetForm()
     emit('member-added')
-        } catch (e) {
-          if (e.name !== "SessionExpiredError") {
-            error.value = e.message
-          }
-        }
-      }
+  } catch (e) {
+    if (e.name !== "SessionExpiredError") {
+      error.value = e.message
+    }
+  }
+}
+
 // Reset form when modal is closed
 watch(() => props.show, (newVal) => {
   if (!newVal) {
@@ -76,7 +79,7 @@ watch(() => props.show, (newVal) => {
     <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">Alta Nuevo Socio</h5>
+          <h5 class="modal-title">Alta Nuevo {{ t('member') }}</h5>
           <button type="button" class="btn-close" @click="$emit('close')"></button>
         </div>
         <div class="modal-body">
@@ -113,7 +116,7 @@ watch(() => props.show, (newVal) => {
             </div>
             <div class="row">
               <div class="col-md-6 mb-3">
-                <label for="modal-member-type" class="form-label">Tipo de Socio</label>
+                <label for="modal-member-type" class="form-label">Tipo de {{ t('member') }}</label>
                 <select id="modal-member-type" class="form-select" v-model="newMember.member_type">
                   <option>N/A</option>
                   <option>Adherente</option>
@@ -121,7 +124,7 @@ watch(() => props.show, (newVal) => {
                 </select>
               </div>
               <div class="col-md-6 mb-3">
-                <label for="modal-member-number" class="form-label">Número de Socio</label>
+                <label for="modal-member-number" class="form-label">Número de {{ t('member') }}</label>
                 <input type="text" id="modal-member-number" class="form-control" v-model="newMember.member_number" />
               </div>
             </div>
@@ -131,7 +134,7 @@ watch(() => props.show, (newVal) => {
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" @click="$emit('close')">Cerrar</button>
-          <button type="button" class="btn btn-primary" @click="handleSubmit">Guardar Socio</button>
+          <button type="button" class="btn btn-primary" @click="handleSubmit">Guardar {{ t('member') }}</button>
         </div>
       </div>
     </div>

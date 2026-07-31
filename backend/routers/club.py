@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -33,6 +33,10 @@ def update_club_settings(
     db_club = db.query(models.Club).filter(models.Club.id == current_admin.club_id).first()
     
     db_club.base_fee = club_in.base_fee
+    if club_in.tenant_type is not None:
+        if club_in.tenant_type not in ["club", "academy", "tutoring"]:
+            raise HTTPException(status_code=400, detail="Invalid tenant type. Must be 'club', 'academy', or 'tutoring'.")
+        db_club.tenant_type = club_in.tenant_type
     
     db.add(db_club)
     db.commit()
