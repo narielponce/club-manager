@@ -253,3 +253,25 @@ El proyecto está preparado para producción y se orquesta a través de `docker-
 
 3.  **Actualización en Caliente (Hot-Sync)**:
     La Landing Page e imágenes se montan como volúmenes directos. Esto permite que actualizaciones estéticas sencillas en el HTML/CSS de la Landing Page o la subida de logos se apliquen al instante con un `git pull` en el servidor, sin tener que reconstruir o reiniciar los contenedores.
+
+### 🤖 Despliegue Automático con GitHub Actions (CI/CD)
+
+El repositorio incluye un flujo automatizado en `.github/workflows/deploy.yml` que se activa al hacer `git push` a las ramas `main` o `stable-working-version` (o mediante ejecución manual desde GitHub Actions):
+
+1. **Validación Previa (CI)**:
+   - Compila la aplicación frontend Vue 3 (`npm run build`).
+   - Valida la sintaxis del backend FastAPI con Python (`py_compile`).
+   - Si alguna comprobación falla, el despliegue se detiene para evitar caídas en producción.
+2. **Despliegue SSH en la VPS (CD)**:
+   - Se conecta de forma segura a la VPS vía SSH.
+   - Actualiza el código del repositorio (`git reset --hard origin/<rama>`).
+   - Reconstruye y levanta los contenedores necesarios (`docker compose up -d --build`).
+   - Ejecuta las migraciones pendientes de la base de datos (`alembic upgrade head`).
+   - Limpia imágenes y capas huérfanas de Docker (`docker image prune -f`).
+
+#### Configuración de Secretos en GitHub (Settings > Secrets and variables > Actions):
+- `VPS_HOST`: Dirección IP o dominio de tu servidor VPS.
+- `VPS_USERNAME`: Usuario SSH del servidor (ej. `root` o tu usuario de despliegue).
+- `VPS_SSH_KEY`: Clave privada SSH (contenido de tu `id_rsa` o `id_ed25519`).
+- `VPS_PORT`: Puerto SSH (opcional, por defecto `22`).
+- `VPS_PROJECT_PATH`: Ruta absoluta donde reside el repositorio en la VPS (ej. `/root/club-manager` o `/var/www/club-manager`).

@@ -1,0 +1,104 @@
+name: CI/CD Pipeline - Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - stable-working-version
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Rama a desplegar manualmente'
+        required: false
+        default: 'stable-working-version'
+
+jobs:
+  validate:
+    name: Validar Frontend y Backend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Descargar código (Checkout)
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Validar compilación de Frontend (Vue 3 / Vite)
+        run: |
+          cd frontend
+          npm ci
+          npm run build
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Validar sintaxis de Backend (Python / FastAPI)
+        run: |
+          python -m py_compile backend/main.py backend/models.py backend/schemas.py backend/security.py
+
+  deploy:
+    name: Desplegar en VPS
+    needs: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ejecutar despliegue vía SSH en la VPS
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            TARGET_BRANCH="${{ github.event.inputs.branch || github.ref_name }}"
+            echo "=================================================="
+            echo "🚀 Iniciando despliegue automático en la VPS"
+            echo "🌿 Rama: $TARGET_BRANCH"
+            echo "📅 Fecha: $(date)"
+            echo "=================================================="
+
+            # Navegar al directorio de la app en la VPS
+            cd "${{ secrets.VPS_PROJECT_PATH }}"
+
+            # 1. Actualizar código limpio desde Git
+            echo "📥 1. Actualizando repositorio..."
+            git fetch origin "$TARGET_BRANCH"
+            git checkout "$TARGET_BRANCH"
+            git reset --hard "origin/$TARGET_BRANCH"
+
+            # 2. Detectar comando Docker Compose
+            if docker compose version >/dev/null 2>&1; then
+              DC="docker compose"
+            elif command -v docker-compose >/dev/null 2>&1; then
+              DC="docker-compose"
+            else
+              echo "❌ Error: Ni 'docker compose' ni 'docker-compose' están disponibles."
+              exit 1
+            fi
+            echo "🐳 Usando: $DC"
+
+            # 3. Reconstruir y levantar contenedores
+            echo "🔨 2. Reconstruyendo imágenes y reiniciando contenedores..."
+            $DC up -d --build
+
+            # 4. Aplicar migraciones de base de datos
+            echo "🔄 3. Aplicando migraciones de base de datos con Alembic..."
+            sleep 3
+            $DC exec -T backend alembic -c backend/alembic.ini upgrade head
+
+            # 5. Limpieza de imágenes en desuso
+            echo "🧹 4. Limpiando imágenes y capas Docker antiguas..."
+            docker image prune -f
+
+            echo "=================================================="
+            echo "✅ ¡Despliegue completado exitosamente!"
+            echo "📊 Estado de los contenedores:"
+            $DC ps
+            echo "=================================================="
