@@ -8,6 +8,7 @@ from ..database import get_db
 from ..security import get_current_user, verify_password, get_password_hash, create_reset_token
 # from ..email_service import send_email_async # Import the async email sender
 from ..email_service import email_service
+from ..n8n_service import notify_password_reset
 
 router = APIRouter(
     prefix="/account",
@@ -87,29 +88,18 @@ async def request_password_reset(
     db.refresh(user)
 
     # Construct frontend reset URL
-    # FRONTEND_URL should be set in .env for production
-    FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173") # Default for local dev
+    FRONTEND_URL = os.getenv("FRONTEND_URL", "https://sociosass.raizdigital.com.ar").rstrip("/")
     reset_link = f"{FRONTEND_URL}/reset-password?token={token_plain}"
 
-    # Send email
-    subject = "Restablecer tu Contraseña de Club Manager"
-    body = f"""Hola {user.email.split('@')[0]},
+    # Obtener nombre de la organización/club si existe
+    db_club = db.query(models.Club).filter(models.Club.id == user.club_id).first() if user.club_id else None
+    club_name = db_club.name if db_club else "Club Manager"
 
-Has solicitado restablecer tu contraseña para Club Manager.
-
-Haz clic en el siguiente enlace para establecer una nueva contraseña:
-{reset_link}
-
-Este enlace es válido por 1 hora. Si no solicitaste este cambio, por favor ignora este correo.
-
-Saludos,
-El equipo de Club Manager
-"""
-#    await send_email_async(
-    await email_service.send_email_async(
-        recipients=[user.recovery_email],
-        subject=subject,
-        body=body,
+    # Enviar notificación a n8n para despachar el correo con el enlace
+    notify_password_reset(
+        user=user,
+        reset_link=reset_link,
+        club_name=club_name,
         background_tasks=background_tasks
     )
 

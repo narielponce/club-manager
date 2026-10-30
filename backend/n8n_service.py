@@ -83,3 +83,42 @@ def notify_new_client_created(
         print(f"[INFO] Tarea de webhook n8n programada en segundo plano para destinatario: {recipient}")
     else:
         _send_webhook_request(webhook_url, payload, secret)
+
+
+def notify_password_reset(
+    user,
+    reset_link: str,
+    club_name: str = "Club Manager",
+    background_tasks: BackgroundTasks = None
+):
+    """
+    Envía un webhook a n8n cuando un usuario solicita restablecer su contraseña,
+    para que n8n despache el correo con el enlace de recuperación.
+    """
+    default_url = "https://n8n.raizdigital.com.ar/webhook/club-manager/recuperar-contrasena"
+    webhook_url = os.getenv("N8N_PASSWORD_RESET_WEBHOOK_URL") or default_url
+
+    recipient = user.recovery_email or user.email
+
+    payload = {
+        "event": "password_reset_requested",
+        "timestamp": datetime.utcnow().isoformat(),
+        "recipient_email": recipient,
+        "reset_link": reset_link,
+        "club_name": club_name,
+        "user": {
+            "id": user.id,
+            "email": user.email,
+            "recovery_email": user.recovery_email,
+            "role": user.role
+        }
+    }
+
+    secret = os.getenv("N8N_WEBHOOK_SECRET")
+
+    if background_tasks:
+        background_tasks.add_task(_send_webhook_request, webhook_url, payload, secret)
+        print(f"[INFO] Tarea de recuperación de contraseña n8n programada en segundo plano para: {recipient}")
+    else:
+        _send_webhook_request(webhook_url, payload, secret)
+
