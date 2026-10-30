@@ -36,9 +36,8 @@ echo "🔄 3. Aplicando migraciones de base de datos..."
 sleep 3
 $DC exec -T backend alembic -c backend/alembic.ini upgrade head
 
-# 5. Renovación y recarga de certificados SSL
-echo "🔒 4. Verificando y renovando certificados SSL..."
-$DC run --rm certbot renew || true
+# 5. Recarga de Nginx para aplicar certificados actualizados
+echo "🔒 4. Recargando Nginx para aplicar certificados..."
 $DC exec -T proxy nginx -s reload || true
 
 # 6. Limpieza de imágenes huérfanas
