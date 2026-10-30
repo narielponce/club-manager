@@ -13,6 +13,7 @@ def _send_webhook_request(url: str, payload: dict, secret: str = None):
     """
     Realiza la petición HTTP POST al Webhook de n8n de manera síncrona dentro del background task.
     """
+    print(f"[INFO] Disparando webhook a n8n: {url} (destinatario: {payload.get('recipient_email')})")
     try:
         data = json.dumps(payload, default=str).encode("utf-8")
         headers = {
@@ -25,10 +26,12 @@ def _send_webhook_request(url: str, payload: dict, secret: str = None):
         req = urllib.request.Request(url, data=data, headers=headers, method="POST")
         with urllib.request.urlopen(req, timeout=12) as response:
             status = response.getcode()
-            print(f"[INFO] Webhook n8n enviado con éxito. HTTP Status: {status}")
+            body = response.read().decode("utf-8", errors="ignore")
+            print(f"[INFO] Webhook n8n enviado con éxito. HTTP Status: {status}, Response: {body}")
             return status
     except urllib.error.HTTPError as e:
-        print(f"[ERROR] Error HTTP al enviar webhook a n8n ({url}): {e.code} - {e.reason}")
+        err_body = e.read().decode("utf-8", errors="ignore") if hasattr(e, 'read') else ''
+        print(f"[ERROR] Error HTTP al enviar webhook a n8n ({url}): {e.code} - {e.reason}. Detalle: {err_body}")
     except Exception as e:
         print(f"[ERROR] Error al conectar con n8n ({url}): {e}")
 
@@ -43,10 +46,8 @@ def notify_new_client_created(
     Envía un webhook a n8n con los datos del nuevo cliente (Club + Usuario Admin)
     para despachar el correo de bienvenida con la contraseña temporal.
     """
-    webhook_url = os.getenv("N8N_NEW_CLIENT_WEBHOOK_URL")
-    if not webhook_url:
-        print("[WARNING] N8N_NEW_CLIENT_WEBHOOK_URL no configurada en el .env. Webhook omitido.")
-        return
+    default_url = "https://n8n.raizdigital.com.ar/webhook/nuevo-cliente"
+    webhook_url = os.getenv("N8N_NEW_CLIENT_WEBHOOK_URL") or default_url
 
     frontend_url = os.getenv("FRONTEND_URL", "https://sociosass.raizdigital.com.ar").rstrip("/")
     login_url = f"{frontend_url}/login"
