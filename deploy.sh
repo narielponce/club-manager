@@ -36,8 +36,13 @@ echo "🔄 3. Aplicando migraciones de base de datos..."
 sleep 3
 $DC exec -T backend alembic -c backend/alembic.ini upgrade head
 
-# 5. Limpieza de imágenes huérfanas
-echo "🧹 4. Limpiando imágenes y capas Docker antiguas..."
+# 5. Renovación y recarga de certificados SSL
+echo "🔒 4. Verificando y renovando certificados SSL..."
+$DC run --rm certbot renew || true
+$DC exec -T proxy nginx -s reload || true
+
+# 6. Limpieza de imágenes huérfanas
+echo "🧹 5. Limpiando imágenes y capas Docker antiguas..."
 docker image prune -f
 
 echo "=================================================="

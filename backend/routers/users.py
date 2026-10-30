@@ -9,19 +9,20 @@ from ..database import get_db
 from ..security import get_current_user, get_current_admin_user, get_password_hash, create_random_string # Added create_random_string
 # from ..email_service import send_email_async # Added
 from ..email_service import email_service
+from ..n8n_service import notify_new_client_created
 
 router = APIRouter()
 
 @router.post("/users/", response_model=schemas.ClubCreationResponse) # Changed response_model
 async def create_user(
+    background_tasks: BackgroundTasks,
     club_name: str = Form(...),
     email: str = Form(...),
     recovery_email: str = Form(...), # Changed from password to recovery_email
     logo: Optional[UploadFile] = File(None),
     tenant_type: str = Form("club"),
     db: Session = Depends(get_db),
-    current_user: models.User = Depends(security.get_current_superadmin_user),
-    background_tasks: BackgroundTasks = None # Added BackgroundTasks
+    current_user: models.User = Depends(security.get_current_superadmin_user)
 ):
     # --- DEBUG PRINTS ---
     print(f"--- DEBUG: Received request to create club '{club_name}'.")
@@ -105,6 +106,14 @@ async def create_user(
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
+
+    # Disparar webhook a n8n para enviar correo con la contraseña temporal
+    notify_new_client_created(
+        club=new_club,
+        user=new_user,
+        temporary_password=temporary_password,
+        background_tasks=background_tasks
+    )
 
     # Return ClubCreationResponse
     return schemas.ClubCreationResponse(

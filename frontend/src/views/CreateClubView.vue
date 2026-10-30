@@ -90,8 +90,9 @@
        body: formData,
      });
      
-     success.value = `¡Organización '${response.club.name}' y admin '${response.admin_user.email}' creados con éxito!
-                      Contraseña temporal: ${response.temporary_password}`;
+     const destEmail = response.admin_user.recovery_email || response.admin_user.email;
+     success.value = `¡Organización '${response.club.name}' creada con éxito!
+                      Contraseña temporal: ${response.temporary_password} (enviada al correo ${destEmail}).`;
      
      clubName.value = '';
      tenantType.value = 'club';
